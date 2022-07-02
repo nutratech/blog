@@ -12,7 +12,7 @@
    :caption: Contents:
 
 .. postlist:: 10
-   :author: errbufferoverfl
+   :author: shane
    :date: %Y-%m-%d
    :format: {date} - {title}
    :list-style: none

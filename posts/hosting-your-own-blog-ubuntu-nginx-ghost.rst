@@ -2,7 +2,8 @@
  Hosting your own blog with ghost, Ubuntu & nginx
 **************************************************
 
-.. post::
+.. post:: 01, July 2022
+    :tags: development
     :author: shane
 
 This is one of the most affordable ways to host your own content.
