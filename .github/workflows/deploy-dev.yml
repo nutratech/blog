@@ -1,0 +1,32 @@
+---
+name: deploy-dev
+
+"on":
+  push:
+    branches: ["dev"]
+
+jobs:
+  deploy-dev:
+    runs-on: [self-hosted, dev-east]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Init
+        run: |
+          rm -rf .venv
+          python3 -m venv .venv
+          source .venv/bin/activate
+          pip install -r requirements.txt
+
+      - name: Clean up
+        run: make clean
+
+      - name: Build
+        run: make html
+
+      - name: Install
+        run: |
+          rm -rf /var/www/blog_build/ /var/www/blog_static/
+          cp -rp _build _static /var/www/blog

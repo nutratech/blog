@@ -1,0 +1,39 @@
+---
+name: deploy-prod
+"on":
+  push:
+    branches: ["prod"]
+
+jobs:
+  deploy-prod:
+    runs-on: [self-hosted, vps76-sanic]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Clean up & Init
+        run: |
+          make clean
+          rm -rf .venv
+          make init
+          source .venv/bin/activate
+          make deps
+
+      - name: Verify (Lint & Test)
+        run: |
+          source .venv/bin/activate
+          make lint test
+
+      # TODO: database upgrades as part of this? Or app handles that?
+      #  That means also backups and a retention policy
+      - name: Install
+        run: |
+          source .venv/bin/activate
+          make install
+
+      # NOTE: I added a /etc/sudoers rule, to avoid the password prompt
+      # See: https://unix.stackexchange.com/a/606476/290740
+      - name: Restart Service
+        run: sudo systemctl restart ntserv
