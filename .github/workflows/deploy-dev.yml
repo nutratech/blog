@@ -18,13 +18,18 @@ jobs:
           rm -rf .venv
           python3 -m venv .venv
           source .venv/bin/activate
+          pip install wheel
           pip install -r requirements.txt
 
       - name: Clean up
-        run: make clean
+        run: |
+          source .venv/bin/activate
+          make clean
 
       - name: Build
-        run: make html
+        run: |
+          source .venv/bin/activate
+          make html
 
       - name: Install
         run: |
