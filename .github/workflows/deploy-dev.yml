@@ -33,5 +33,5 @@ jobs:
 
       - name: Install
         run: |
-          rm -rf /var/www/blog_build/ /var/www/blog_static/
+          rm -rf /var/www/blog/_build/ /var/www/blog/_static/
           cp -rp _build _static /var/www/blog
