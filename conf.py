@@ -28,7 +28,6 @@ author = 'shane'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    "ablog",
     "sphinx.ext.intersphinx",
     "sphinx_panels",
 ]
