@@ -6,8 +6,8 @@
     :tags: development
     :author: shane
 
-This is one of the most affordable ways to host your own content.
-It's also one of the most nuanced.
+One of the most affordable and coolest ways to host your own content.
+Also one of the more nuanced.
 
 **NOTE:** My setup also involves a web application, an API, database,
 and a few other services.
@@ -46,9 +46,10 @@ Setting up Ghost
 
 .. important::
 
-    You can find the official guide here. I recommend comparing it with
-    my steps and deciding what works for your situation.
-    I am using sqlite3 for simplicity.
+    You can find the official guide `here <https://ghost.org/docs/install/>`_.
+    I recommend comparing it with my steps and deciding what works for
+    your situation.
+    I am using ``sqlite3`` for simplicity.
 
 You will need to install NodeJS and then the Ghost CLI.
 You can install NodeJS using the guide here.
