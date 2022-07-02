@@ -1,2 +1,5 @@
+ablog~=0.10
+pydata_sphinx_theme~=0.9
+sphinx_panels~=0.6
 sphinx~=5.0
 

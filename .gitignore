@@ -10,6 +10,8 @@
 
 # Sphinx build
 _build/
+.doctrees/
+_website/
 
 ####################
 ## Python Ignores ##
