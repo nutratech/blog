@@ -78,7 +78,7 @@ Choose to start ghost. Then verify it is running with these commands.
 .. code-block:: bash
 
     ghost ls
-    curl localhost:2368
+    curl localhost:2368  # May not return a 200, but should return something
 
 Domain registration & DNS records
 #################################
@@ -198,7 +198,8 @@ To test your changes and reload nginx, run this.
 
 .. code-block:: bash
 
-    sudo nginx -t sudo nginx -s reload
+    sudo nginx -t
+    sudo nginx -s reload
 
 Now your blog should be public at your domain URL.
 
@@ -234,7 +235,7 @@ Backups (and other words of caution)
 ####################################
 
 Self-hosting can be tough. You need to back up regularly,
-and any writing,any comments or media uploaded in between is precarious.
+and any writing, any comments or media uploaded in between is precarious.
 If anything happens to your VPS, you may be only able to restore as recently
 as your last backup point.
 
@@ -242,6 +243,12 @@ One option is to register a ``cronjob`` (on your personal machine),
 which performs a secure copy command twice a day.
 You can then perform weekly compressions and store to Google drive or run
 ``rsync`` on a large hard disk of your own.
+Ghost CLI supports a ``backup`` command, and an export feature from the
+admin labs in the UI.
+
+My blog does not run on NodeJS or ghost, because it is using tools like
+python, sphinx, ablog, and pelican to generate static HTML and efficiently
+serve that up through nginx.
 
 An application like this also won't scale to millions of views per day
 without heavily tweaking, adding, and improving things.
