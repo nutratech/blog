@@ -1,39 +1,37 @@
 ---
 name: deploy-prod
+
 "on":
   push:
     branches: ["prod"]
 
 jobs:
-  deploy-prod:
-    runs-on: [self-hosted, vps76-sanic]
+  deploy-dev:
+    runs-on: [self-hosted, vps76]
+
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-        with:
-          submodules: recursive
 
-      - name: Clean up & Init
+      - name: Init
         run: |
-          make clean
           rm -rf .venv
-          make init
+          python3 -m venv .venv
           source .venv/bin/activate
-          make deps
+          pip install wheel
+          pip install -r requirements.txt
 
-      - name: Verify (Lint & Test)
+      - name: Clean up
         run: |
           source .venv/bin/activate
-          make lint test
+          make clean
 
-      # TODO: database upgrades as part of this? Or app handles that?
-      #  That means also backups and a retention policy
+      - name: Build
+        run: |
+          source .venv/bin/activate
+          make html
+
       - name: Install
         run: |
-          source .venv/bin/activate
-          make install
-
-      # NOTE: I added a /etc/sudoers rule, to avoid the password prompt
-      # See: https://unix.stackexchange.com/a/606476/290740
-      - name: Restart Service
-        run: sudo systemctl restart ntserv
+          rm -rf /var/www/blog/_build/ /var/www/blog/_static/
+          cp -rp _build _static /var/www/blog
