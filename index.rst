@@ -17,10 +17,3 @@
    :format: {date} - {title}
    :list-style: none
    :excerpts:
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
