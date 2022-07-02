@@ -51,8 +51,7 @@ Setting up Ghost
     your situation.
     I am using ``sqlite3`` for simplicity.
 
-You will need to install NodeJS and then the Ghost CLI.
-You can install NodeJS using the guide here.
+NodeJS can be installed by searching for nodesource GitHub.
 
 Then you will need to install the Ghost CLI.
 
@@ -72,7 +71,7 @@ Now create a folder and install the ghost blog there.
     ghost install --db=sqlite3
     ghost setup
 
-Set the url to the real url for that server, e.g. https://example.com/blog
+Set the URL to the full URL for that server, e.g. https://example.com/blog
 
 Choose to start ghost. Then verify it is running with these commands.
 
@@ -90,8 +89,7 @@ Domain registration & DNS records
     `Freenom - A Name for Everyone <https://www.freenom.com/en/index.html?lang=en>`_
 
 
-You need to register a domain and point its ``"A"`` records to your
-Ubuntu server's IP.
+Register a domain and point its ``"A"`` records to your Ubuntu server's IP.
 
 1. Register for an account
 2. Go to ``Services > Register`` a New Domain, and complete the steps.
@@ -125,7 +123,7 @@ as well as the ``CertBot`` snap.
     sudo apt install nginx
     sudo snap install certbot --classic
 
-Enable ufw and make firewall exceptions.
+Enable ``ufw`` and make firewall exceptions.
 
 .. code-block:: bash
 
@@ -135,7 +133,9 @@ Enable ufw and make firewall exceptions.
 
 Now you can enable your site availability in the nginx config.
 
-sudo vim /etc/nginx/sites-available/default
+::
+
+    sudo vim /etc/nginx/sites-available/default
 
 And update it as follows.
 You will need to replace ``nutra.tk`` with your domain name.
