@@ -11,6 +11,8 @@
    :maxdepth: 2
    :caption: Contents:
 
+    README
+
 .. postlist:: 10
    :author: shane
    :date: %Y-%m-%d
