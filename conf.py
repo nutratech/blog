@@ -17,7 +17,7 @@
 
 # -- Project information -----------------------------------------------------
 
-project = 'docs'
+project = 'nutra'
 copyright = '2022, shane'
 author = 'shane'
 
