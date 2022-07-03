@@ -1,6 +1,0 @@
-ablog~=0.10
-docutils~=0.17
-pydata_sphinx_theme~=0.9
-sphinx_panels~=0.6
-sphinx~=4.5
-
