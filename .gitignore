@@ -12,6 +12,7 @@
 _build/
 .doctrees/
 _website/
+output/
 
 ####################
 ## Python Ignores ##
