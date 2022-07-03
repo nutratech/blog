@@ -3,7 +3,7 @@ Configuration for the site build
 """
 AUTHOR = "Shane J"
 SITENAME = "Modern Trends"
-SITEURL = "https://nutra.tk/blog"
+SITEURL = ""
 
 PATH = "content"
 
@@ -28,6 +28,9 @@ SOCIAL = (
 )
 
 DEFAULT_PAGINATION = 10
+
+# THEME = "/home/shane/.pelican-themes/pelican-cait"
+THEME = "/home/shane/.pelican-themes/elegant"
 
 # Uncomment following line if you want document-relative URLs when developing
 # RELATIVE_URLS = True
