@@ -1,0 +1,4 @@
+baseURL = 'http://nutra.tk/blog/'
+languageCode = 'en-us'
+title = 'Modern Trends'
+theme = "hello-friend-ng"

@@ -12,7 +12,13 @@
 _build/
 .doctrees/
 _website/
+
+# Pelican
 output/
+
+# Hugo
+*.lock
+
 
 ####################
 ## Python Ignores ##
