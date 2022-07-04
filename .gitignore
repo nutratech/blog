@@ -18,6 +18,8 @@ output/
 
 # Hugo
 *.lock
+public/
+resources/
 
 
 ####################
