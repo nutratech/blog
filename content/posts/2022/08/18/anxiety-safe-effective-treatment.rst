@@ -17,7 +17,7 @@ Practically everyone has experienced them at one point or another, but almost
 no one is openly talking about it.
 
 They are often swept under a rug, and for the sufferer it can sometimes
-feel difficult to make consistent progress against them and in life.
+feel difficult to make consistent progress.
 
 
 Exposure

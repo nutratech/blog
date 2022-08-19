@@ -5,7 +5,7 @@ import os
 
 AUTHOR = "Shane J"
 SITENAME = "Modern Trends"
-SITEURL = ""
+SITEURL = os.getenv("NUTRA_BLOG_BASE_URL") or str()
 
 PATH = "content"
 

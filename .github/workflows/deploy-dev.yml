@@ -27,6 +27,8 @@ jobs:
           make clean
 
       - name: Build
+        env:
+          NUTRA_BLOG_BASE_URL: https://dev.nutra.tk/blog
         run: |
           source .venv/bin/activate
           make html
