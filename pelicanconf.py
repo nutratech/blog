@@ -1,6 +1,8 @@
 """
 Configuration for the site build
 """
+import os
+
 AUTHOR = "Shane J"
 SITENAME = "Modern Trends"
 SITEURL = ""
@@ -30,7 +32,7 @@ SOCIAL = (
 DEFAULT_PAGINATION = 10
 
 # THEME = "/home/shane/.pelican-themes/pelican-cait"
-THEME = "/home/shane/.pelican-themes/elegant"
+THEME = f"{os.path.expanduser('~')}/.pelican-themes/elegant"
 
 # Uncomment following line if you want document-relative URLs when developing
 # RELATIVE_URLS = True
