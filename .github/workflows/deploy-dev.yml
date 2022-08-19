@@ -29,9 +29,9 @@ jobs:
       - name: Build
         run: |
           source .venv/bin/activate
-          make html
+          make publish
 
       - name: Install
         run: |
-          rm -rf /var/www/blog/_build/ /var/www/blog/_static/
-          cp -rp _build _static /var/www/blog
+          rm -rf /var/www/blog/*
+          cp -rp output/* /var/www/blog/
