@@ -42,7 +42,6 @@ Supplements
 Placebo Effect
 ~~~~~~~~~~~~~~
 
-
 .. note::
 
     A note about the placebo effect before we dive into Supplements.
@@ -55,8 +54,13 @@ But what is a "real" effect? If 30% of the benefits are "real" but the other
 still apply (at least under ideal or naive conditions)?
 
 The mind subconsciously slants its subjective experience toward the expected
-state, and it might not be so important if the effect
+state, and it might not be so important if the effect was embellished or felt
+more strongly on a subjective basis.
 
 
 Magnesium
 ~~~~~~~~~
+
+
+Kava
+~~~~
