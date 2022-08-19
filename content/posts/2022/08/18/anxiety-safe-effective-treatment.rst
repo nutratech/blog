@@ -34,33 +34,125 @@ more likely.
 
 You will be able to flow freely in the moment and abide by the words.
 
+Exposure has been very important to me. One might even say this blog is an
+expression of it, helping me overcome more and more.
+
+Whatever your frightful situation, it's important to get out there and face up.
+To see where you stand and sometimes be truly humbled, but to be thankful you
+tried.
+
+
+Exercise
+########
+
+If you're physically able to exercise, it can provide another modest boost in
+mood and focus.
+
+Exercise boost endorphins and other feel-good and relaxing hormones.
+It improves dopamine function related to reward processing and confidence.
+It may also up-regulate serotonin systems, helping to promote a relaxed, happy
+mood.
+
+Improving yourself may carry a psychological benefit of its own, however
+temporary.
+Whether it's improving the way you look, or **mentally exercising** by reading
+a book or taking another college course... you will feel better than if you had
+done nothing instead.
+
 
 Supplements
 ###########
 
-
-Placebo Effect
-~~~~~~~~~~~~~~
-
 .. note::
 
-    A note about the placebo effect before we dive into Supplements.
+    A note about the placebo effect before delving into supplements.
 
 One might argue the placebo effect is strong, so the benefits are shaped mostly
 by your expectations rather than a real effect.
 
 But what is a "real" effect? If 30% of the benefits are "real" but the other
-70% are imagined? Isn't 30% a significant benefit over 0%? And doesn't the 70%
+70% are imagined, isn't 30% a significant benefit over 0%? And doesn't the 70%
 still apply (at least under ideal or naive conditions)?
 
 The mind subconsciously slants its subjective experience toward the expected
-state, and it might not be so important if the effect was embellished or felt
+state, and it might not be so important if the effect was embellished and felt
 more strongly on a subjective basis.
+
+Double-blind studies even reveal massive fluctuations in individuals.
+One person in the non-placebo group may experience a much milder response
+than others, but the effect averages out with a large sample size.
+
+The double-blind response is generally milder than the unmitigated placebo,
+but it is not known if this reflects *only* the true effect (as there is no
+better standard to compare it against).
 
 
 Magnesium
 ~~~~~~~~~
 
+First on our list. Probably the safest and most well-tolerated. Surprisingly
+effective and my personal battle-tested favorite.
+
+Magnesium is an essential nutrient in our diet; we obtain it in large amounts
+from foods. It is a relatively common nutrient for people to be deficient in.
+Certain disorders and diuretics (caffeine) may make a deficiency worse.
+
+Most people know it also functions as a muscle relaxant & anti-migraine agent.
+
+It works in a variety of ways (GABA receptor modulation, mitochondrial support)
+but the mild action at the GABA receptor is thought to be the most significant.
+
+It is sold in powder form in multiple ways (threonate, glycinate, malate,
+citrate, and others). But my recommendation is for magnesium glycinate.
+It is well-studied, quickly dissolves, and reaches the brain in significant
+amounts.
+It does not taste the best, so if you're willing to spend more
+magnesium threonate tastes milder and has demonstrated similar effects.
+Magnesium oxide is likely among the worst choices in terms of bio-availability
+(the amount which reaches the bloodstream & brain).
+
+
+Lion's Mane (mushroom)
+~~~~~~~~~~~~~~~~~~~~~~
+
+Another relatively safe choice, with such mild effects they are often
+imperceptible.
+
+Lion's mane is commonly known to boost NGF (nerve growth factor).
+
+The reported benefits on depression and anxiety are mild (but consistent)
+across the literature, and are what earns it the spot here.
+
+It should ideally be taken on an ongoing basis, at least 3-4 days a week, but
+benefits do not fade as quickly as some of the other items on this list.
+It may take up to 6 weeks for the initial benefits to become noticeable.
+
+There are two parts to the mushroom: the mycelium and the fruiting bodies.
+They contain different compounds, but it is not known which are more potent
+or to what extent they act together. The fruiting body contains *hericenones*,
+while the mycelium contains *erinacines*. From a cost perspective, the fruiting
+body may be the more practical choice.
+
 
 Kava
 ~~~~
+
+Kava is another interesting plant compound with a high safety profile.
+
+.. note::
+
+    Consult with your doctor if you have any liver problems before taking Kava.
+
+It is thought to work by either modulating the GABA-A receptor site or by
+up-regulating the production of mRNA for GABA-A receptors.
+
+
+NAC
+~~~
+
+N-acetyl-cysteine has anti-glutamatergic (calming) and pro-glutathione
+(antioxidant) effects. It is frequently studied in the context of mental
+illnesses (depression, anxiety, schizophrenia, OCD, and more).
+
+Closing Remarks
+###############
