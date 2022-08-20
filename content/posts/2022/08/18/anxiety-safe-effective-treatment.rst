@@ -2,8 +2,8 @@
  Safely & Effectively Treating Anxiety
 ***************************************
 
-:date: 2022-08-18 20:00 -400
-:modified: 2022-08-21 00:30 -400
+:date: 2022-08-18
+:modified: 2022-08-21
 :tags: anxiety
 :category: health
 :slug: anxiety-safe-effective-treatment
@@ -161,8 +161,27 @@ seldomly as a few times a month, its effects quickly diminish if use trails off
 completely, and some sort of consistency is ideal.
 
 
+Honorable Mentions
+~~~~~~~~~~~~~~~~~~
+
+- Magnolia officinalis
+- Melissa officinalis
+- CBD
+- NAC
+
+Certain compounds, which though promising on paper, may not be the most
+effective in practice.
+Even if they have interesting or desirable ways of operating in the body, they
+may fizzle out under actual use, or have mild sedating effects.
+
+CBD
+***
+
+In the case of CBD, it can be *too* calming and disrupt methylation status
+(epigentic age).
+
 NAC
-~~~
+***
 
 N-acetyl-cysteine has anti-glutamatergic (calming) and pro-glutathione
 (antioxidant) effects. It is frequently studied in the context of mental
@@ -171,23 +190,3 @@ stress and disorder (depression, anxiety, schizophrenia, OCD, and more).
 The negatives to NAC include heartburn and its fully synthetic status
 (not produced in the body or by plants). As a compound, it is also not the most
 well-studied or compelling (in terms of its effects and experience reports).
-
-
-Honorable Mentions
-~~~~~~~~~~~~~~~~~~
-
-- Magnolia officinalis
-- Melissa officinalis
-- CBD
-
-Certain compounds, which though promising on paper, may not be the most
-effective in practice.
-Even if they have interesting or desirable ways of operating in the body, they
-may fizzle out under actual use, or have mild sedating effects.
-
-In the case of CBD, it can be *too* calming and disrupt methylation status
-(epigentic age).
-
-
-Closing Remarks
-###############
