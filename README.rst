@@ -35,9 +35,4 @@ See our ``server`` repository for more information.
 Resources
 #########
 
-https://www.sphinx-doc.org/en/master/
-
-https://www.errbufferoverfl.me/posts/2020/sphinx-blog-part-one/
-
-https://pydata-sphinx-theme.readthedocs.io/en/stable/user_guide/configuring.html
-
+https://docs.getpelican.com/en/latest/quickstart.html
