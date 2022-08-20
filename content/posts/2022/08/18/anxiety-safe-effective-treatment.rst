@@ -34,6 +34,12 @@ more likely.
 
 You will be able to flow freely in the moment and abide by the words.
 
+Sometimes your biology will get ahead of you, and you may feel anxious when
+you shouldn't.
+Sometimes supplementation can restore homeostasis in extenuating circumstances,
+(sometimes it can horrifically disrupt things too).
+
+
 Exposure has been very important to me. One might even say this blog is an
 expression of it, helping me overcome more and more.
 
@@ -146,13 +152,27 @@ Kava is another interesting plant compound with a high safety profile.
 It is thought to work by either modulating the GABA-A receptor site or by
 up-regulating the production of mRNA for GABA-A receptors.
 
+Because it interacts directly with the GABA receptor, it has potential
+(however slim) to result in rebound anxiety (or making things worse) by
+down-regulating GABA receptor levels. Since GABA has an overall calming effect,
+reducing it is not called for.
+
+Overall kava is a fairly effective supplement. Though it can be taken as
+seldomly as a few times a month, its effects quickly diminish if use trails off
+completely, and some sort of consistency is ideal.
+
 
 NAC
 ~~~
 
 N-acetyl-cysteine has anti-glutamatergic (calming) and pro-glutathione
 (antioxidant) effects. It is frequently studied in the context of mental
-illnesses (depression, anxiety, schizophrenia, OCD, and more).
+stress and disorder (depression, anxiety, schizophrenia, OCD, and more).
+
+The negatives to NAC include heartburn and its fully synthetic status
+(not produced in the body or by plants). As a compound, it is also not the most
+well-studied or compelling (in terms of its effects and experience reports).
+
 
 Closing Remarks
 ###############
