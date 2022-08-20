@@ -2,8 +2,8 @@
  Safely & Effectively Treating Anxiety
 ***************************************
 
-:date: 2022-08-18 20:00
-:modified: 2022-08-20 21:20
+:date: 2022-08-18 20:00 -400
+:modified: 2022-08-21 00:30 -400
 :tags: anxiety
 :category: health
 :slug: anxiety-safe-effective-treatment
@@ -34,11 +34,10 @@ more likely.
 
 You will be able to flow freely in the moment and abide by the words.
 
-Sometimes your biology will get ahead of you, and you may feel anxious when
-you shouldn't.
+Sometimes your biology will get ahead of you. You may feel anxious even when
+everything else is under control.
 Sometimes supplementation can restore homeostasis in extenuating circumstances,
-(sometimes it can horrifically disrupt things too).
-
+(sometimes it can dramatically disrupt things too, be careful).
 
 Exposure has been very important to me. One might even say this blog is an
 expression of it, helping me overcome more and more.
@@ -46,10 +45,6 @@ expression of it, helping me overcome more and more.
 Whatever your frightful situation, it's important to get out there and face up.
 To see where you stand and sometimes be truly humbled, but to be thankful you
 tried.
-
-That's a really negative thought. Why would you discourage someone like that?
-No, what you're doing is trying to run their life.
-Trying to convert someone to your religion without getting to know them first.
 
 
 Exercise
@@ -176,6 +171,22 @@ stress and disorder (depression, anxiety, schizophrenia, OCD, and more).
 The negatives to NAC include heartburn and its fully synthetic status
 (not produced in the body or by plants). As a compound, it is also not the most
 well-studied or compelling (in terms of its effects and experience reports).
+
+
+Honorable Mentions
+~~~~~~~~~~~~~~~~~~
+
+- Magnolia officinalis
+- Melissa officinalis
+- CBD
+
+Certain compounds, which though promising on paper, may not be the most
+effective in practice.
+Even if they have interesting or desirable ways of operating in the body, they
+may fizzle out under actual use, or have mild sedating effects.
+
+In the case of CBD, it can be *too* calming and disrupt methylation status
+(epigentic age).
 
 
 Closing Remarks
