@@ -31,8 +31,7 @@ SOCIAL = (
 
 DEFAULT_PAGINATION = 10
 
-# THEME = "/home/shane/.pelican-themes/pelican-cait"
-THEME = f"{os.path.expanduser('~')}/.pelican-themes/elegant"
+THEME = "elegant_theme"
 
 # Uncomment following line if you want document-relative URLs when developing
 # RELATIVE_URLS = True
