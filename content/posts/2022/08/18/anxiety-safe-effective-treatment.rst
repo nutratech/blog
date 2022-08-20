@@ -2,8 +2,8 @@
  Safely & Effectively Treating Anxiety
 ***************************************
 
-:date: 2022-08-18 20:00 -400
-:modified: 2022-08-21 00:30 -400
+:date: 2022-08-18
+:modified: 2022-08-21
 :tags: anxiety
 :category: health
 :slug: anxiety-safe-effective-treatment
