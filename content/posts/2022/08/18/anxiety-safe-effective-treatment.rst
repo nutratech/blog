@@ -3,7 +3,7 @@
 ***************************************
 
 :date: 2022-08-18 20:00
-:modified: 2022-08-18 20:00
+:modified: 2022-08-20 21:20
 :tags: anxiety
 :category: health
 :slug: anxiety-safe-effective-treatment
@@ -46,6 +46,10 @@ expression of it, helping me overcome more and more.
 Whatever your frightful situation, it's important to get out there and face up.
 To see where you stand and sometimes be truly humbled, but to be thankful you
 tried.
+
+That's a really negative thought. Why would you discourage someone like that?
+No, what you're doing is trying to run their life.
+Trying to convert someone to your religion without getting to know them first.
 
 
 Exercise
