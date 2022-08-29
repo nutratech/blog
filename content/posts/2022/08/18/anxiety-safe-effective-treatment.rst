@@ -81,6 +81,12 @@ a book or taking another college course... you will feel better than if you had
 done nothing instead.
 
 
+Social activities & Affiliation
+###############################
+
+e.g. hanging with Guna.
+
+
 Supplements
 ###########
 
