@@ -3,7 +3,7 @@
 ***************************************
 
 :date: 2022-08-18
-:modified: 2022-08-21
+:modified: 2022-08-29
 :tags: anxiety
 :category: health
 :slug: anxiety-safe-effective-treatment
@@ -18,6 +18,22 @@ no one is openly talking about it.
 
 They are often swept under a rug, and for the sufferer it can sometimes
 feel difficult to make consistent progress.
+
+
+Different sources of anxiety
+############################
+
+Anxiety has a variety of sources and manifestations.
+They have been studied in isolation, but often share a common basis.
+
+- End of life anxiety.
+- General uncertainties (being late, forgetting something, getting lost)
+- Self-doubt.
+    + Insecurity (disappointments with dating, schoolwork or career)
+    + Past mistakes, inadequacies.
+    + Social situations (e.g. lack of finesse & fear of being gauche).
+- Lack of fulfillment or enjoyable hobbies / outlets.
+- Meta-anxiety (anxious about feeling anxious)
 
 
 Exposure
@@ -111,9 +127,16 @@ It is sold in powder form in multiple ways (threonate, glycinate, malate,
 citrate, and others). But my recommendation is for magnesium glycinate.
 It is well-studied, quickly dissolves, and reaches the brain in significant
 amounts.
-It does not taste the best, so if you're willing to spend more
-magnesium threonate tastes milder and has demonstrated similar effects.
-Magnesium oxide is likely among the worst choices in terms of bio-availability
+
+.. note::
+
+    Magnesium glycinate does not taste the greatest! I have heard it variously
+    described as "powered drywall" or "pickled, dead fish".
+
+If you're willing to spend more, magnesium threonate tastes milder and has
+similar effects.
+
+Magnesium oxide is among the worst choices in terms of bio-availability
 (the amount which reaches the bloodstream & brain).
 
 
