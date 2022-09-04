@@ -173,6 +173,9 @@ Kava
 
 Kava is another interesting plant compound with a high safety profile.
 
+You can read about it here.
+https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4917254/
+
 .. note::
 
     Consult with your doctor if you have any liver problems before taking Kava.
@@ -207,14 +210,14 @@ CBD
 ***
 
 In the case of CBD, it can be *too* calming and disrupt methylation status
-(epigentic age).
+(epigenetic age).
 
 NAC
 ***
 
-N-acetyl-cysteine has anti-glutamatergic (calming) and pro-glutathione
-(antioxidant) effects. It is frequently studied in the context of mental
-stress and disorder (depression, anxiety, schizophrenia, OCD, and more).
+N-acetyl-cysteine has anti-glutamate (calming) & pro-glutathione (antioxidant)
+effects. It is frequently studied in the context of mental stress and disorder
+(depression, anxiety, schizophrenia, OCD, and more).
 
 The negatives to NAC include heartburn and its fully synthetic status
 (not produced in the body or by plants). As a compound, it is also not the most

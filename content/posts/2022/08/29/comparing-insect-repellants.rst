@@ -21,7 +21,7 @@ Isolate the problem by closing your bedroom door (this could also save your
 life during a fire at night).
 In the morning, you'll want to search doors & windows and on walls, or where it
 sneaked in. You can grab them with a napkin or vacuum them, they are much
-slower than normal flies.
+slower than normal flies. You can also use electronic traps at night.
 
 If you can't avoid a few bites, many store-bought itch remedies are
 ammonia-based. A dilute mix of 1 part store-bought ammonia and 20 parts water
