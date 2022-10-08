@@ -24,7 +24,7 @@ A 20.04 Ubuntu server will idle around 400 MB of RAM, and 2% on a 2-core CPU.
 For my website https://nutra.tk/api/, I have the following routes defined
 in nginx.
 
-::
+.. code-block:: text
 
     /      -->  Website (User Interface)
     /api   -->  Server application
@@ -138,7 +138,7 @@ Enable ``ufw`` and make firewall exceptions.
 
 Now you can enable your site availability in the nginx config.
 
-::
+.. code-block:: bash
 
     sudo vim /etc/nginx/sites-available/default
 
