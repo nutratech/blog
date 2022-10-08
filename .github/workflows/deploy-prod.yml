@@ -6,7 +6,7 @@ name: deploy-prod
     branches: ["master"]
 
 jobs:
-  deploy-dev:
+  deploy-prod:
     runs-on: [self-hosted, vps76]
 
     steps:
