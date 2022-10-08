@@ -2,9 +2,14 @@
  Hosting your own blog with ghost, Ubuntu & nginx
 **************************************************
 
-.. post:: 01, July 2022
-    :tags: development
-    :author: shane
+:date: 2022-07-01 12:00
+:modified: 2022-07-02 12:00
+:tags: development, blogging
+:category: development
+:slug: hosting-your-own-blog-with-ghost-ubuntu-nginx
+:authors: Shane Jaroch
+:summary: A way to generate static sites with Python
+
 
 One of the most affordable and coolest ways to host your own content.
 Also one of the more nuanced.
@@ -19,7 +24,7 @@ A 20.04 Ubuntu server will idle around 400 MB of RAM, and 2% on a 2-core CPU.
 For my website https://nutra.tk/api/, I have the following routes defined
 in nginx.
 
-::
+.. code-block:: text
 
     /      -->  Website (User Interface)
     /api   -->  Server application
@@ -133,7 +138,7 @@ Enable ``ufw`` and make firewall exceptions.
 
 Now you can enable your site availability in the nginx config.
 
-::
+.. code-block:: bash
 
     sudo vim /etc/nginx/sites-available/default
 

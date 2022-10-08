@@ -1,0 +1,22 @@
+---
+name: lint
+
+"on":
+  push: {}
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Install requirements
+        run: pip install doc8>=1.0.0
+
+      - name: Lint RST (doc8)
+        run: doc8 -q *.rst content/

@@ -12,6 +12,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+        with:
+          submodules: recursive
 
       - name: Init
         run: |
@@ -27,11 +29,13 @@ jobs:
           make clean
 
       - name: Build
+        env:
+          NUTRA_BLOG_BASE_URL: https://nutra.tk/blog
         run: |
           source .venv/bin/activate
-          make html
+          make publish
 
       - name: Install
         run: |
-          rm -rf /var/www/blog/_build/ /var/www/blog/_static/
-          cp -rp _build _static /var/www/blog
+          rm -rf /var/www/blog/*
+          cp -rp output/* /var/www/blog/
