@@ -1,3 +1,6 @@
 [submodule "elegant_theme"]
-	path = elegant_theme
+	path = themes/elegant
 	url = git@github.com:Pelican-Elegant/elegant.git
+[submodule "themes/furo"]
+	path = themes/furo
+	url = git@github.com:pradyunsg/furo.git
