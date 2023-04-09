@@ -4,7 +4,7 @@ Configuration for the site build
 import os
 
 AUTHOR = "Shane J"
-SITENAME = "Modern Trends"
+SITENAME = "Blog | NutraTech"
 SITEURL = os.getenv("NUTRA_BLOG_BASE_URL") or str()
 
 PATH = "content"
