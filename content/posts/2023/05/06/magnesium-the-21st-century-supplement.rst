@@ -6,7 +6,7 @@
 :modified: 2023-04-01
 :tags: comparison
 :category: household
-:slug: opening-drinking-coconuts
+:slug: magnesium-21st-century-supplement
 :authors: Shane Jaroch
 :summary: Different ways to open a drinking coconut.
 

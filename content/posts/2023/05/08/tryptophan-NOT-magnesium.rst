@@ -10,8 +10,9 @@
 :authors: Shane Jaroch
 :summary: A comparison of (closely related) natural sleep aids.
 
-Karl Jung spoke frequently of a "mass psychosis", Bertrand Russell once said,
-"".
+Karl Jung spoke frequently of a "mass psychosis", and J. A. Schmit once said,
+"... the truth is that a stupidity, even after having passed through a million
+mouths, does not become less foolish."
 
 Like my heroes, I'm here to make the bold, scientific claim that a cheaper,
 simpler, safer supplement actually also produces superior results.
