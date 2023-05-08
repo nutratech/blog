@@ -43,7 +43,8 @@ but its role in heart, muscle and nerve function are among the most noteworthy.
 As a supplement it is often prescribed in conjunction with other treatments, to
 aid with muscle fatigue & leg cramps, sleep, anxiety, and heart palpitations.
 
-"Magnesium is essential for the immune system, including in the fight against cancer"
+"Magnesium is essential for the immune system, including in the fight against
+cancer"
 https://www.sciencedaily.com/releases/2022/01/220119121455.htm
 
 
