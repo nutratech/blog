@@ -4,6 +4,7 @@
 
 :date: 2023-05-09
 :modified: 2023-05-09
+:status: hidden
 :tags: drugs
 :category: stories
 :slug: cops-came-to-my-house-on-salvia
@@ -12,9 +13,9 @@
 
 
 I had taken a few puffs off a vaporizer and seen faint whispers of purple
-vapor exhale under a light. I was laying back on the couch, enjoying the mildly
-altered perceptual state and peacefulness of things, when I became aware of a
-disturbance outside.
+vapor exhaled under a light. I was laying back on the couch, enjoying the
+mildly altered perceptual state and peacefulness of things, when I became
+aware of a disturbance outside.
 
 A lady had been locked out of her house. By the sounds of it a police officer
 had been summoned to help her, but had stopped short of her, and she was now
