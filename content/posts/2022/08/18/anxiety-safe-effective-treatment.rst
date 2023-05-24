@@ -9,6 +9,7 @@
 :slug: anxiety-safe-effective-treatment
 :authors: Shane Jaroch
 :summary: Behavior and pharmaceutical interventions for common anxiety.
+:description: Safe and effective treatments for anxiety, natural
 
 
 Anxiety and depression are two of the most common stressors in modern life.

@@ -9,6 +9,7 @@
 :slug: hosting-your-own-blog-with-ghost-ubuntu-nginx
 :authors: Shane Jaroch
 :summary: A way to generate static sites with Python
+:description: Self-hosting a blog with nginx
 
 
 One of the most affordable and coolest ways to host your own content.

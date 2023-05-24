@@ -9,6 +9,8 @@
 :slug: comparing-insect-repellents
 :authors: Shane Jaroch
 :summary: A head-to-head comparison of top insect repellents.
+:description: DEET, lemon eucalyptus, picaridin, mosquitoes, ticks, repellents
+              reviewed
 
 
 If you're one of the people who gets frequent bug bites, there's always a time
