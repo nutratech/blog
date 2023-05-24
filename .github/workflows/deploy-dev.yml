@@ -7,7 +7,7 @@ name: deploy-dev
 
 jobs:
   deploy-dev:
-    runs-on: [self-hosted, dev-east]
+    runs-on: [self-hosted, dev]
 
     steps:
       - name: Checkout
