@@ -3,7 +3,7 @@ Configuration for the site build
 """
 import os
 
-AUTHOR = "Shane J"
+AUTHOR = "Shane Jaroch"
 SITENAME = "Blog | NutraTech"
 SITEURL = os.getenv("NUTRA_BLOG_BASE_URL") or str()
 
