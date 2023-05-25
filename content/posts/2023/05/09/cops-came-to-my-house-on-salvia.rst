@@ -4,7 +4,7 @@
 
 :date: 2023-05-09
 :modified: 2023-05-09
-:status: hidden
+:status: published
 :tags: drugs
 :category: stories
 :slug: cops-came-to-my-house-on-salvia

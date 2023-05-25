@@ -4,7 +4,7 @@
 
 :date: 2023-04-01
 :modified: 2023-04-01
-:status: draft
+:status: published
 :tags: comparison
 :category: household
 :slug: magnesium-21st-century-supplement

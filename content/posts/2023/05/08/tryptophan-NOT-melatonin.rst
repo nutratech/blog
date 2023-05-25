@@ -4,7 +4,7 @@
 
 :date: 2023-05-08
 :modified: 2023-05-08
-:status: draft
+:status: published
 :tags: comparison
 :category: supplements
 :slug: tryptophan-not-melatonin

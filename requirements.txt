@@ -1,1 +1,2 @@
+pelican-youtube>=0.2.1
 pelican>=4.8.0

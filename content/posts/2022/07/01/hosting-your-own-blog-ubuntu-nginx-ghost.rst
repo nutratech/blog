@@ -4,6 +4,7 @@
 
 :date: 2022-07-01 12:00
 :modified: 2022-07-02 12:00
+:status: published
 :tags: development, blogging
 :category: development
 :slug: hosting-your-own-blog-with-ghost-ubuntu-nginx

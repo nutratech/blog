@@ -4,7 +4,7 @@
 
 :date: 2022-09-16
 :modified: 2022-09-16
-:status: draft
+:status: published
 :tags: guide
 :category: health
 :slug: fresh-breath-dental-hygiene
@@ -12,4 +12,13 @@
 :summary: Top tips for tooth care and oral health.
 
 
-**TODO:** This.
+Tongue cleaner.
+
+Gum serum / essential oil drops or powder.
+
+Floss, ideally bamboo or coconut, with charcoal.
+
+Both a good clay toothpaste and a fluoridated one.
+
+Diet (less process sugars, fruits, more spicy food and vegetables).
+

@@ -4,6 +4,7 @@
 
 :date: 2022-08-29
 :modified: 2022-08-29
+:status: published
 :tags: comparison
 :category: household
 :slug: comparing-insect-repellents
