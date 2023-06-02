@@ -6,7 +6,7 @@
 :modified: 2023-04-01
 :status: published
 :tags: comparison
-:category: household
+:category: supplements
 :slug: magnesium-21st-century-supplement
 :authors: Shane Jaroch
 :summary: Different ways to open a drinking coconut.

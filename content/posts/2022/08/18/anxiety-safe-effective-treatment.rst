@@ -82,12 +82,17 @@ Whether it's improving the way you look, or **mentally exercising** by reading
 a book or taking another college course... you will feel better than if you had
 done nothing instead.
 
+Massages
+~~~~~~~~
+
+Massages, hot baths, and saunas may all contribute to relaxation as well.
+
 
 Social activities & Affiliation
 ###############################
 
-e.g. hanging with Guna.
-
+Hanging out with friends, starting a club, or just getting out of the house can
+have huge benefits on mental well-being.
 
 Supplements
 ###########
