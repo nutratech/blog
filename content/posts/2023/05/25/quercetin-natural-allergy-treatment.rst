@@ -17,6 +17,7 @@ This time of year many of us will be reaching for allergy relief medicines, but
 these often have side effects and lose efficiency over time.
 For many of us, there may be a better option.
 
+
 Chicken Soup
 ####################################################
 
@@ -38,3 +39,25 @@ By slightly reducing the aggressiveness of the immune response, chicken soup
 is able to bring about a moderate reduction in mucus production, sneezing and
 other irritating symptoms without slowing down the body's clearance of the
 virus.
+
+
+Mechanisms
+####################################################
+
+**TODO**: This.
+
+
+Dosage & Contraindications
+####################################################
+
+Typically 500 mg is taken between three times weekly and twice daily.
+
+Some studies report complications in patients with kidney disease, although
+other studies report benefits to the kidney system. Check with your doctor if
+you have known renal disease or are in treatment for it.
+
+Quercetin may also interfere with the metabolism of certain drugs in the liver,
+so again check with your doctor if you are taking any medications.
+
+Quercetin acts as a mild immuno-suppressant so it is also best to check in
+cases with autoimmune disease, organ transplant, HIV, and similar conditions.
