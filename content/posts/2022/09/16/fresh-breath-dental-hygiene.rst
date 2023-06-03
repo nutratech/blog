@@ -13,6 +13,7 @@
 
 
 Electric toothbrush. Brush as needed, 3 times or more a day.
+Rinse with tap water when not using fluoride toothpaste.
 
 Tongue cleaner.
 
@@ -42,6 +43,8 @@ Spring or filter water with a pH above 7. Limit soda, citrus, other acidic
 drinks.
 
 Stay hydrated, avoid dry mouth and breath through nose if possible.
+
+Limit snacking. Brush between meals.
 
 
 Other
