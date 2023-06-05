@@ -5,7 +5,7 @@
 :date: 2022-09-16
 :modified: 2023-06-04
 :status: published
-:tags: hygiene, guide
+:tags: bathroom, guides
 :category: health
 :slug: fresh-breath-oral-hygiene
 :authors: Shane Jaroch

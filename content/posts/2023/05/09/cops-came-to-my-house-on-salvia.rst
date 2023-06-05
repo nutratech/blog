@@ -5,8 +5,8 @@
 :date: 2023-05-09
 :modified: 2023-05-09
 :status: published
-:tags: drugs
-:category: stories
+:tags: psychedelics
+:category: drugs
 :slug: cops-came-to-my-house-on-salvia
 :authors: Shane Jaroch
 :summary: Out of body, chance encounter with kind cop.

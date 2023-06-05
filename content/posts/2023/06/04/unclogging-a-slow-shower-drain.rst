@@ -2,14 +2,15 @@
  Unclogging a shower (slow drain)
 ************************************************************
 
-:date: 2023-06-03
-:modified: 2023-06-03
+:date: 2023-06-04
+:modified: 2023-06-05
 :status: published
-:tags: guides, psychedelics
-:category: drugs
+:tags: guides, bathroom
+:category: household
 :slug: unclogging-a-slow-shower-drain
 :authors: Shane Jaroch
-:summary: Review of different antidotes to a bad trip
+:summary: Trick to unclog a slow shower drain which is plugged or getting
+          clogged.
 
 
 When a shower starts to drain slowly, when you find yourself up to your ankles
@@ -33,3 +34,5 @@ Pour baking soda & boiling water
 You may need to repeat this process a few times.
 
 You can start with boiling water to loosen the gunk.
+
+Use generous amounts of baking soda and boiling water to quickly unclog it.

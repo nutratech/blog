@@ -5,7 +5,7 @@
 :date: 2023-06-02
 :modified: 2023-06-02
 :status: published
-:tags: supplements, guide, depression
+:tags: supplements, guides, depression
 :category: supplements
 :slug: common-strategies-against-depression
 :authors: Shane Jaroch

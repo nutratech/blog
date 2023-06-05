@@ -5,7 +5,7 @@
 :date: 2023-04-01
 :modified: 2023-04-01
 :status: published
-:tags: comparison
+:tags: comparison, kitchen, guides
 :category: household
 :slug: opening-drinking-coconuts
 :authors: Shane Jaroch

@@ -5,7 +5,7 @@
 :date: 2022-08-18
 :modified: 2022-08-29
 :status: published
-:tags: anxiety
+:tags: supplements, guides, mental-health
 :category: health
 :slug: anxiety-safe-effective-treatment
 :authors: Shane Jaroch

@@ -5,7 +5,7 @@
 :date: 2023-06-02
 :modified: 2023-06-02
 :status: published
-:tags: guide, hygiene
+:tags: guides, bathroom
 :category: household
 :slug: body-odor-how-to-smell-fresh
 :authors: Shane Jaroch

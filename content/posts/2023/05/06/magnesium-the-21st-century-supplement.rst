@@ -2,8 +2,8 @@
  Magnesium: The 21st century supplement
 ****************************************
 
-:date: 2023-04-01
-:modified: 2023-04-01
+:date: 2023-05-06
+:modified: 2023-05-06
 :status: published
 :tags: comparison
 :category: supplements

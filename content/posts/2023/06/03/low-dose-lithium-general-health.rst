@@ -1,11 +1,11 @@
 ************************************************************
- Soy Milk Recipe at Home
+ Low dose lithium for general health
 ************************************************************
 
-:date: 2023-06-02
-:modified: 2023-06-02
+:date: 2023-06-03
+:modified: 2023-06-03
 :status: published
-:tags: nutrients
+:tags: supplements
 :category: supplements
 :slug: low-dose-lithium-general-health
 :authors: Shane Jaroch
