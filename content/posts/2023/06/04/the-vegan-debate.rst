@@ -24,7 +24,6 @@ or empirically explain the purported ill effects of an omnivorous diet.
 They may resort to ethical claims that taking an animal's life is a spiritual
 sin punishable by karma. Mysticism is delightful undertaking, but it is not
 accessible to science and often leads to occultism.
-[leads to, ends in, reduces to occultism]
 
 Today's eggs are not the same as our ancestors' eggs. A pasture-raised egg will
 have substantially more vitamin K, D, A, and magnesium than eggs from a
@@ -39,6 +38,10 @@ follow similar healthy practices in the rest of their life will likely show no
 difference from vegans in terms of adverse health outcomes. By including some
 animal products and being selective about them, it is easier to reach daily
 requirements for vitamin B12, iron, and protein.
+
+There are some plant compounds which may be harmful as well: oxalates,
+phytates, aflatoxin to name a few. The idea that plants are absolutely superior
+is wrong.
 
 Where science is misleading, it is generally due to individual error and a
 misinterpretation of results rather than a fault with the process as a whole.
