@@ -5,6 +5,11 @@ name: deploy-prod
   push:
     branches: ["master"]
 
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
 jobs:
   deploy-prod:
     runs-on: [self-hosted, prod]
@@ -39,3 +44,15 @@ jobs:
         run: |
           rm -rf /var/www/blog/*
           cp -rp output/* /var/www/blog/
+
+      - name: Prepare GitHub pages
+        run: |
+          git checkout gh-pages
+          # || git switch --orphan=gh-pages
+          ls -lah
+          git add -f output/
+          git --no-pager log
+          git pull
+          git --no-pager log
+          git commit --no-gpg-sign -m "[ci skip] Automated deployment to GitHub Pages on $(date +%s%3N)"
+          git push --force --set-upstream origin gh-pages
