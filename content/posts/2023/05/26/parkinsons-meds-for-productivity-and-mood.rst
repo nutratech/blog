@@ -1,5 +1,5 @@
 ************************************************************
- Selegiline: Parkinson's, Brain Aging, Depression, and ADHD
+ Parkinson's medication for productivity and mood?
 ************************************************************
 
 :date: 2023-05-26
@@ -9,7 +9,7 @@
 :category: health
 :slug: selegiline-anti-aging-adhd-drug
 :authors: Shane Jaroch
-:summary: Selegiline, Parkinson's, Depression, ADHD, anti-aging, review.
+:summary: Selegiline review; Parkinson's, Depression, ADHD, brain aging, anti-aging.
 
 
 A review / reaction to Sam Bankman's use of Selegiline.
