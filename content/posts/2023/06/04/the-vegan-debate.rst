@@ -52,3 +52,16 @@ steadily, building upon what came before, like bricks gradually stacked upon a
 building's foundation.
 To think ourselves wiser than them is wrong; they did not have access to the
 same information as us. Not nearly.
+
+
+Confounding Variable (Research Bias)
+####################################
+
+Vegans as a population typically exhibit higher rates of fitness (regular
+exercise), and lower rates of drug addiction and violence.
+
+Because there is a strong relationship between self-neglect and shortened life
+expectancy, it is not clear to what extent these other variables (e.g. more
+regular exercise) may explain any enhanced longevity in the vegan population.
+To what extent can we disentangle these causes and delineate the dietary
+contributions from other extraneous variables?
