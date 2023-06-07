@@ -9,7 +9,8 @@
 :category: health
 :slug: selegiline-anti-aging-adhd-drug
 :authors: Shane Jaroch
-:summary: Selegiline review; Parkinson's, Depression, ADHD, brain aging, anti-aging.
+:summary: Selegiline review; Parkinson's, Depression, ADHD, brain aging,
+          anti-aging.
 
 
 A review / reaction to Sam Bankman's use of Selegiline.
