@@ -1,3 +1,6 @@
 [submodule "themes/flex"]
 	path = themes/flex
 	url = https://github.com/alexandrevicenzi/Flex.git
+[submodule "themes/m.css"]
+	path = themes/m.css
+	url = https://github.com/mosra/m.css.git
