@@ -45,27 +45,3 @@ jobs:
           rm -rf /var/www/blog/*
           cp -rp output/* /var/www/blog/
           make clean
-
-      - name: Build (nutratech.github.io)
-        env:
-          NUTRA_BLOG_BASE_URL: https://nutratech.github.io/blog
-        run: |
-          source .venv/bin/activate
-          make publish
-
-      - name: Deploy (nutratech.github.io)
-        run: |
-          git fetch origin gh-pages
-          git checkout gh-pages
-          # || git switch --orphan=gh-pages
-          rm -rf .venv/ .mypy_cache/ __pycache__/
-          git ls-files | xargs rm -rf
-          mv output/* .
-          git add .
-          git reset themes/
-          # git pull
-          git commit --no-gpg-sign -m "[ci skip] Automated deployment to GitHub Pages on $(date +%s%3N)"
-          git push --force --set-upstream origin gh-pages
-          # Clean up
-          git ls-files | xargs rm -rf
-          rm -rf .git
