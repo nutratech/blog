@@ -2,6 +2,7 @@
 Configuration for the site build
 """
 import os
+from datetime import datetime
 
 AUTHOR = "Shane Jaroch"
 SITENAME = "Blog | NutraTech"
@@ -20,18 +21,42 @@ TRANSLATION_FEED_ATOM = None
 AUTHOR_FEED_ATOM = None
 AUTHOR_FEED_RSS = None
 
+BROWSER_COLOR = "#333333"
+PYGMENTS_STYLE = "monokai"
+
 # Blogroll
 LINKS = ()
 
 # Social widget
 SOCIAL = (
-    ("GitHub", "https://github.com/nutratech"),
-    ("Facebook", "https://www.facebook.com/nutrallc/"),
+    ("github", "https://github.com/nutratech"),
+    ("facebook", "https://www.facebook.com/nutrallc/"),
 )
+
+GITHUB_CORNER_URL = "https://github.com/nutratech"
+
+MENUITEMS = (
+    ("Archives", "/archives.html"),
+    ("Categories", "/categories.html"),
+    ("Tags", "/tags.html"),
+)
+
+CC_LICENSE = {
+    "name": "Creative Commons Attribution-ShareAlike 4.0 International License",
+    "version": "4.0",
+    "slug": "by-sa",
+    "icon": True,
+    "language": "en_US",
+}
+
+COPYRIGHT_YEAR = datetime.now().year
 
 DEFAULT_PAGINATION = 10
 
-THEME = "themes/elegant"
+THEME = "themes/flex"
+
+THEME_COLOR_AUTO_DETECT_BROWSER_PREFERENCE = True
+THEME_COLOR_ENABLE_USER_OVERRIDE = True
 
 PLUGINS = [
     "pelican_youtube",
