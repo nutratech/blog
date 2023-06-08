@@ -4,7 +4,7 @@
 
 :date: 2023-06-05
 :modified: 2023-06-05
-:status: published
+:status: draft
 :tags: psychedelics
 :category: drugs
 :slug: accidentally-trusting-a-kid-with-a-ten-strip
