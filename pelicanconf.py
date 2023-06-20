@@ -9,6 +9,8 @@ SITENAME = "Blog | NutraTech"
 SITEURL = os.getenv("NUTRA_BLOG_BASE_URL") or str()
 
 PATH = "content"
+# ARTICLE_SAVE_AS = "{date:%Y}/{date:%m}/{slug}.html"
+ARTICLE_URL = "{date:%Y}/{date:%m}/{slug}.html"
 
 TIMEZONE = "America/Detroit"
 
