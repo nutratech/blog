@@ -78,8 +78,8 @@ To think ourselves wiser than them is wrong; they did not have access to the
 same information as us. Not nearly.
 
 
-Confounding Variable (Research Bias)
-####################################
+Confounding Variables (Research Bias)
+#####################################
 
 Vegans as a population typically exhibit higher rates of fitness (regular
 exercise), and lower rates of drug addiction and violence.
