@@ -61,7 +61,8 @@ There are many more potential interactions [ https://selfhack.com/blog/16-nutrie
 My experience with eczema confirms I have to limit intake of certain otherwise
 healthy foods.
 
-Vegan diets can also be higher in sugar, and processed foods such as potato chips.
+Vegan diets can also be higher in sugar, and processed foods such as potato
+chips.
 It is important to make individualized choices, apply common sense to dietary
 choices, and consult with a healthcare professional before making any dietary
 or lifestyle modifications.
