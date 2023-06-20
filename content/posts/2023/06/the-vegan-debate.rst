@@ -9,7 +9,7 @@
 :category: health
 :slug: the-vegan-debate
 :authors: Shane Jaroch
-:summary: Review of veganism, pescatarianism and the 21st century health
+:summary: Review of veganism, pescetarianism and the 21st century health
           implications.
 
 
