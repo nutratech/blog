@@ -1,5 +1,5 @@
 ************************************************************
- A critical review of modern dating sources & reactionaries
+ A critical response to modern dating reactionaries
 ************************************************************
 
 :date: 2023-08-20
