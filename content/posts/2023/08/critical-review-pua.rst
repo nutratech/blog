@@ -44,3 +44,9 @@ I can even think of many negatives associated with online dating.
 
 The opinion than pick up artists are inherently bad people is itself pejorative
 and a deeply rooted prejudice, a kind of hypocrisy and almost mass psychosis.
+
+==> But it's random?
+
+So are chance encounters at the bar or through friends, or online dating apps.
+
+I will not be flustered in my unwavering defense.
