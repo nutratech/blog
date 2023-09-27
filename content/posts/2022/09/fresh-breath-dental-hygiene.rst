@@ -18,10 +18,6 @@ Electric toothbrush
 Using an electric toothbrush can remove additional plaque and stains, keeping
 your teeth healthy and white.
 
-Brush as needed, 3 times or more a day.
-Rinse with tap water when not using fluoride toothpaste.
-Only order "rounded" bristles, as these will not damage you enamel as much.
-
 Don't brush *immediately* after a meal, this can damage enamel.
 Wait a few minutes for food to loosen, swish with alkaline drops, and floss
 first.
@@ -44,7 +40,8 @@ By using a good stainless steel tongue cleaner between meals, you can greatly
 freshen your breath and cut down on bacteria in your mouth.
 
 I recommend a couple different tongue cleaners. One for each bathroom, or for
-traveling. A long one, one which scrapes closer. A plastic one if you prefer.
+traveling. A long one, one which scrapes sharply. A plastic one for delicate
+work.
 
 Find a set of tongue cleaners which suite your needs.
 
@@ -54,13 +51,22 @@ Gum serum / remineralization powder
 
 Use this after acidic or sugary meals, or if you cannot access a toothbrush.
 
+Use this throughout the day (together with a tongue cleaner) to maintain fresh
+breath and a neutral pH.
+
+It does not actually remineralize as well as fluoride, but it is still a great
+way to keep bacteria in check (if you can't brush, or clean your tongue).
+This will help keep your breath fresher, and improve your taste of food.
+
 
 Floss
 #####
 
-Ideally bamboo or coconut, with charcoal.
+Ideally bamboo or coconut.
 
-If you are going to skip brushing, use this between meals and snacks.
+If you are going to skip brushing, floss between meals and snacks.
+In addition to the remineralizing drops, it is a great alternative to constant
+brushing.
 
 
 Multiple toothpastes
@@ -70,21 +76,29 @@ Multiple toothpastes
 - Fluoridated
 - Charcoal
 
-Have at least one portable toothpaste as well, for on the go.
+Have at least one portable toothpaste as well, for on the go.  As well as the
+remineralizing drops
 
 
 Diet
 ####
 
-Less processed sugars, fruits; more spicy food and savory vegetables.
+Less processed sugars, sweet fruits; more spicy food and savory vegetables.
 
-Some raw foods, and no processed foods overall. To promote healthy gut
+Some raw foods and less processed foods overall, to promote healthy gut
 bacteria.
 
-Supplement calcium. And magnesium.
+Supplements
+~~~~~~~~~~~
+
+Depending your diet, you may want to supplement calcium citrate. And a
+magnesium source.
 
 Take 1/2 multivitamin on days where you eat less healthy, as some of the
 vitamins are involved in maintaining internal tooth health.
+
+Other tips
+~~~~~~~~~~
 
 Spring or filter water with a pH above 7. Limit soda, citrus, other acidic
 drinks.
@@ -92,8 +106,5 @@ drinks.
 Stay hydrated, avoid dry mouth and breath through nose if possible.
 
 Limit snacking. Brush between meals.
-
-Other tips
-~~~~~~~~~~
 
 Don't clench, grind or bite your lip or fingers. Don't cause obvious damage.
