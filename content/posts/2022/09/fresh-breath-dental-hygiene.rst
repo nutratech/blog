@@ -80,6 +80,18 @@ Have at least one portable toothpaste as well, for on the go.  As well as the
 remineralizing drops
 
 
+Vodka brushing (optional)
+#########################
+
+Particularly relevant if you consume Cannabis, as the oils will condense on
+your teeth and stain them brownish.
+
+Brush with 1/4 of a shot of vodka for 1 minute, once or twice a week.
+
+This can also aid to remove non-polar food stains, where other methods have
+failed.
+
+
 Diet
 ####
 

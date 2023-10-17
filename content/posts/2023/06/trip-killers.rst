@@ -20,3 +20,8 @@ nerves.
 
 Low dose lithium may have an anti-dopaminergic effect (which has been
 implicated in the 2nd phase of the LSD experience).
+
+
+CBD
+
+https://www.erowid.org/psychoactives/pharmacology/images/pharmacology_article2-6-med.png
