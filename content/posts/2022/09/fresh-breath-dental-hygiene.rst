@@ -80,6 +80,20 @@ Have at least one portable toothpaste as well, for on the go.  As well as the
 remineralizing drops
 
 
+Avoiding chewing gum, biting lips, grinding teeth
+#################################################
+
+Even if you are not predisposed to bruxism (uncontrolled clenching or grinding
+of teeth), you can still benefit from a reduction in stress and muscle tension.
+
+Avoid biting your lips or finger cuticles.  Avoid chewing gum too often.  These
+behaviors can lead to direct attrition of occlusal edges and will further
+reinforce the motor process of clenching,
+
+Eating too many chewy foods (dried fruit, jerky, tough meat) can also cause
+some degree of stress.
+
+
 Vodka brushing (optional)
 #########################
 
