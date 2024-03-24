@@ -35,3 +35,10 @@ This isn't a replacement for toilet paper, you still need to get the heavy
 stuff out of the way before spraying down.
 Consider this an added layer of security.
 It gets material and bacteria out of the way, which would normally be smeared.
+
+Use 70% alcohol wipes (full size, not the thin/tiny lens cleaners, not prep
+pads).
+You can fresh up your pits and *derriere* between showers, after the gym,
+before changing undershirts, or before a party (if you're time pressed or don't
+have shower access).
+This is a useful cheat code

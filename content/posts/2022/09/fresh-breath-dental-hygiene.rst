@@ -23,6 +23,12 @@ Wait a few minutes for food to loosen, swish with alkaline drops, and floss
 first.
 
 
+Proper brushing technique
+#########################
+
+(Video of old doc showing circular motion)
+
+
 Frequent dentist visits
 #######################
 
