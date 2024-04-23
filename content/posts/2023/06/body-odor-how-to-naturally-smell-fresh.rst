@@ -22,23 +22,53 @@ that icky, sticky feeling from head to toe.
 Tips
 ####
 
-Wear breathable clothes.
+Wear breathable clothes
+~~~~~~~~~~~~~~~~~~~~~~~
+
 Avoid hot drinks and vigorous exercise in the summer.
+Know your limits and change your clothes often (particularly undershirts,
+socks, and other close-fitting undergarments).
+
+
+Use charcoal or peppermint soap
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Use a special soap to remove extra bacteria and smell.
 
 Scrub your pits well. Don't let the stench set in.
 
-Use crystal deodorant. Even though it's natural, it still has aluminum salts,
-which absorbed but not very well through the skin.
 
-Get a bidet.
-This isn't a replacement for toilet paper, you still need to get the heavy
-stuff out of the way before spraying down.
+Use crystal deodorant
+~~~~~~~~~~~~~~~~~~~~~
+
+Even though it's natural, it still has aluminum salts,
+which absorb (but not very well) through the skin.
+
+
+Get a bidet
+~~~~~~~~~~~
+
+Bidets don't **replace** toilet paper. You still must remove the heavy
+stuff before spraying it down.
 Consider this an added layer of security.
-It gets material and bacteria out of the way, which would normally be smeared.
+It gets material and bacteria out of the way, which would otherwise be left
+smeared behind.
 
-Use 70% alcohol wipes (full size, not the thin/tiny lens cleaners, not prep
-pads).
-You can fresh up your pits and *derriere* between showers, after the gym,
-before changing undershirts, or before a party (if you're time pressed or don't
+
+70% alcohol wipes
+~~~~~~~~~~~~~~~~~
+
+Get the full-size ones, not the thin/tiny lens cleaners, and not prep pads.
+
+You can freshen up your pits and *derriere* between showers, after the gym,
+before changing undershirts, or before a party (if you're time-pressed or don't
 have shower access).
-This is a useful cheat code
+
+Alcohol wipes are a great cheat code.
+
+
+Epsom Salt Foot Bath
+~~~~~~~~~~~~~~~~~~~~
+
+An Epsom salt bath can help freshen up the feet, removing lint, exfoliating,
+and leaving them feeling fresh and reinvigorated.
