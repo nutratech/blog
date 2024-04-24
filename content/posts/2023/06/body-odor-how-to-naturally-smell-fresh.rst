@@ -67,6 +67,13 @@ have shower access).
 Alcohol wipes are a great cheat code.
 
 
+Keep your furniture and bedding clean
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Don't take a shower just to crawl into a dirty bed, and don't law on your
+clean couch when you're overdue for a shower.
+
+
 Epsom Salt Foot Bath
 ~~~~~~~~~~~~~~~~~~~~
 
