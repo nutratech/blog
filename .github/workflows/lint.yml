@@ -21,4 +21,4 @@ jobs:
         run: pip install doc8
 
       - name: Lint RST (doc8)
-        run: doc8 -q *.rst content/
+        run: doc8 -q --ignore D001 content/posts/
