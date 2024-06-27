@@ -1,5 +1,5 @@
 ************************************************************
- Shaving Tips
+ Science Fiction recommendations
 ************************************************************
 
 :date: 2024-05-02
@@ -10,6 +10,8 @@
 :slug: three-sci-fi-books
 :authors: Shane Jaroch
 :summary: Three worthwhile science fiction novels.
+
+**NOTE:** Draft, work in progress!
 
 
 Ender's Game

@@ -1,5 +1,5 @@
 ************************************************************
- History and Overview of Nootropics
+ Hangover Remedies
 ************************************************************
 
 :date: 2024-06-26
@@ -7,9 +7,9 @@
 :status: published
 :tags: supplements
 :category: health, supplements
-:slug: making-sense-of-diets
+:slug: hangover remedies
 :authors: Shane Jaroch
-:summary: Analysis of various diets and practical suggestions.
+:summary: List of supplements to aid in relief of hangover symptoms.
 
 
 **NOTE:** Draft, work in progress!
