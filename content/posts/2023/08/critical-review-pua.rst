@@ -5,8 +5,8 @@
 :date: 2023-08-20
 :modified: 2023-08-20
 :status: published
-:tags: culture
-:category: dating
+:tags: culture, dating
+:category: philosophy
 :slug: critical-review-modern-dating
 :authors: Shane Jaroch
 :summary: Review of lithium's role in human health
