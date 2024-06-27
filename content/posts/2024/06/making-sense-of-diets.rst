@@ -6,7 +6,7 @@
 :modified: 2024-06-22
 :status: published
 :tags: kitchen, diet
-:category: health, household
+:category: health
 :slug: making-sense-of-diets
 :authors: Shane Jaroch
 :summary: Analysis of various diets and practical suggestions.
