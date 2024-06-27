@@ -5,7 +5,7 @@
 :date: 2023-06-04
 :modified: 2023-06-05
 :status: published
-:tags: comparison, diets
+:tags: comparison, diet
 :category: health
 :slug: the-vegan-debate
 :authors: Shane Jaroch
