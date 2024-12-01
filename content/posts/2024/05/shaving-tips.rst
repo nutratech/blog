@@ -22,6 +22,10 @@ It greatly reduces redness and irritation after an electric or manual razor.
 
 It forms a protective layer, locking skin in and keeping the metal blades out.
 
+Applying it after also helps to reduce the razor burn and skin stress.
+I was originally skeptical of aloe, but once I obtained a bottle from online,
+it became a mainstay in my cosmetics repertoire.
+
 
 
 Quality Electric Razor (Or clippers)
