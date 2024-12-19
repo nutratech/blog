@@ -1,3 +1,12 @@
+[submodule "themes/flex"]
+	path = themes/flex
+	url = https://github.com/alexandrevicenzi/Flex.git
+[submodule "themes/m.css"]
+	path = themes/m.css
+	url = https://github.com/mosra/m.css.git
 [submodule "themes/elegant"]
 	path = themes/elegant
-	url = git@github.com:Pelican-Elegant/elegant.git
+	url = https://github.com/Pelican-Elegant/elegant.git
+[submodule "themes/furo"]
+	path = themes/furo
+	url = https://github.com/pradyunsg/furo.git

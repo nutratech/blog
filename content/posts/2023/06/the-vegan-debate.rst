@@ -5,11 +5,11 @@
 :date: 2023-06-04
 :modified: 2023-06-05
 :status: published
-:tags: comparison, diets
+:tags: comparison, diet
 :category: health
 :slug: the-vegan-debate
 :authors: Shane Jaroch
-:summary: Review of veganism, pescatarianism and the 21st century health
+:summary: Review of veganism, pescetarianism and the 21st century health
           implications.
 
 
@@ -40,8 +40,32 @@ animal products and being selective about them, it is easier to reach daily
 requirements for vitamin B12, iron, and protein.
 
 There are some plant compounds which may be harmful as well: oxalates,
-phytates, aflatoxin to name a few. The idea that plants are absolutely superior
-is wrong.
+phytates, aflatoxin, acrylamide to name a few.
+The idea that plants are always healthier has its limitations.
+
+Some nutrients which are hard to get on a vegan diet include:
+
+- Vitamin B12
+- Vitamin D3
+- Omega 3s (EPA)
+- Iron (heme)
+- Calcium
+- Zinc
+- Creatine
+- Taurine
+- Carnosine
+
+According to the ``selfhack`` blog, compounds such as lectins and lignins can
+worsen autoimmune disease.
+There are many more potential interactions [ https://selfhack.com/blog/16-nutrients-vegans-arent-getting/#The_Worst_Part_About_VegetarianVegan_Diets ].
+My experience with eczema confirms I have to limit intake of certain otherwise
+healthy foods.
+
+Vegan diets can also be higher in sugar, and processed foods such as potato
+chips.
+It is important to make individualized choices, apply common sense to dietary
+choices, and consult with a healthcare professional before making any dietary
+or lifestyle modifications.
 
 Where science is misleading, it is generally due to individual error and a
 misinterpretation of results rather than a fault with the process as a whole.
@@ -54,8 +78,8 @@ To think ourselves wiser than them is wrong; they did not have access to the
 same information as us. Not nearly.
 
 
-Confounding Variable (Research Bias)
-####################################
+Confounding Variables (Research Bias)
+#####################################
 
 Vegans as a population typically exhibit higher rates of fitness (regular
 exercise), and lower rates of drug addiction and violence.
