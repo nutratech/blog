@@ -1,14 +1,12 @@
 ---
-title: 'Hello World'
-date: '2026-07-30'
+title: "Hello World"
+date: "2026-07-30"
 ---
 
 <script>
     // You can import Svelte components here if you want!
     let clicks = 0;
 </script>
-
-# {title}
 
 Welcome to your very first blog post! This is written in Markdown but powered by **SvelteKit** and **mdsvex**.
 
