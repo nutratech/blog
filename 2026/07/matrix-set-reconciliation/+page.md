@@ -5,18 +5,21 @@ description: "Synchronizing or proving set equality over the network."
 subtitle: "Proposed potential use cases for set reconciliation."
 ---
 
-## CSAPI integrity
+This post contains a growing list of optimizations, new use cases, or features
+provided by MSC4521.
+
+## CS-API integrity
 
 Client developers are frequently blamed when servers fail to properly send down
-all required `/sync` data. Take `/v3` as a basic example ( these issues can also
-affect `/v5`, but the application of set reconciliation to SSS is out of scope
-for this blog post).
+all required `/sync` data. Take `/v3` as a basic example (these issues can also
+affect `/v5`, but the application of set reconciliation to SSS is both highly
+speculative and out of scope for this blog post).
 
-Some commonly reported issues:
+Some commonly reported UI issues:
 
 1. **Left rooms reappearing** or sticking around;
-2. **State drift**, client state resets (old profile photo/name, incorrect
-   member list);
+2. **State drift**, client resets (old profile photos/names, incorrect member
+   list);
 3. Zombie **read receipts** (similar to left rooms, they keep reappearing).
 
 <!-- markdownlint-disable MD024 -->
@@ -38,8 +41,8 @@ flowchart TD
     end
 ```
 
-Rather than falling back to the grand old, often painfully slow "clear cache &
-reload," efficient set reconciliation can instantly send the client precisely
+Rather than falling back to the abysmally bad, often painfully slow "clear cache
+& reload" — efficient set reconciliation can instantly send the client precisely
 what it missed, either via the following `/sync` request or a custom exchange,
 endpoint, or negotiation.
 
@@ -53,29 +56,55 @@ has a fully accurate state, restores a clean view to the client and user.
 **Problem:** How do you know, other than trust, that the client actually holds
 all the relevant data requested from the server and that **none** has been lost?
 
-The conventional answer is we just trust Google or we trust matrix.org, but this
-answer seems unsatisfactory. The more interesting approach is to apply clever
-mathematical techniques or encoding tricks to compare large amounts of data
-without sending or transmitting large amounts of data.
+The conventional answer is we just trust the software and the server developers.
+But homeserver development is notoriously difficult and tedious. Blindly
+trusting that nothing has fallen through the cracks leaves the end-user with no
+quick way to verify their local store. If their eye catches something in their
+Element or Cinny UI client, they might suspect a state reset or cache window
+miss has occurred. Every user instinctively reaches for the sledgehammer
+solution, the notorious "reset cache" button, which is so often used as an
+inconvenient band-aid to repair edge cases like this.
 
-What is a "zero-knowledge" proof or succinct STARK anyway? What's the connection
-to the encoding techniques used in MSC4521?
+This is clearly not ideal. The user is stuck manually visually scanning to check
+for potential signs of a de-sync issue, and must perform a full cache clear and
+initial sync (which can be slow). The more interesting approach is to apply
+clever math tricks or encoding techniques to compare large amounts of data over
+the wire _without_ needing to send or transmit significant amounts of it.
+
+The use case still exists if the `/sync` code is completely stabilized.
+End-users and client developers alike **may not fully trust the _incremental_
+model**, even for `/v3`, and they are well within their rights to request a
+nearly instant, **independent mechanism which cleverly encodes the _full_ data
+set**, and returns any missing events (and lists any extra the client may
+somehow have).
+
+If the user presses the "sync cache" or "repair cache" button (however we decide
+to label it), and their client receives back an empty list of missing events,
+then they know (and the client UI can confirm with a toast) that their cache was
+already healthy and fully in agreement with the server.
+
+This provides a cheap, scalable way to _prove_ to the end-user's client that it
+has all of the data the server has and none of it has been accidentally lost.
+
+<!-- TODO: finish explanation. -->
 
 ---
 
 ## Federation state synchronization
 
-During live federation, `/state_ids` is a fallback in some cases if
-`/get_missing_events`
+During live federation, `/state_ids` is a recommended fallback if
+`/get_missing_events` fails.
+
+<!-- TODO: add citation to official source that /state_ids is the fallback -->
 
 See below table for rough estimate of network bandwidth savings on `/state_ids`.
 
 <!-- markdownlint-disable MD013 -->
 
-| Approach | Expected bandwidth $(\|S\| = 10^5, d = 100)$ | Expected round-trip time |
-| -------- | -------------------------------------------: | -----------------------: |
-| Naive    |      50 bytes/event × 10,000 events = 500 KB |                  0.5 sec |
-| MSC4521  |  65 bytes/event × 100 events + 3 KB = 9.5 KB |                  0.2 sec |
+| Approach | Estimated bandwidth $(\|S\| = 10,000, d = 100)$ | Estimated round-trip time |
+| -------- | ----------------------------------------------: | ------------------------: |
+| Naive    |         50 bytes/event × 10,000 events = 500 KB |                   0.5 sec |
+| MSC4521  |    100 bytes/event × 100 events + 3 KB = 9.5 KB |                   0.2 sec |
 
 <!-- markdownlint-enable MD013 -->
 
@@ -108,9 +137,12 @@ prior state events (not just currently resolved ones).
 A given server, if it diverges, can reach out to a list of other servers (either
 admin-defined, or randomly selected or ranked). By reaching out to 10 or 20
 servers (or however many are in the room, if fewer), the resident server can
-increase their chances of filling in gaps/holes. A strict collection of state
-IDs today is complicated by ordinary (potentially missing) message events
-interlacing with state events (see State DAGs[^1],).
+increase their chances of filling in gaps/holes. A strict traversal and
+collection of state IDs today is complicated by ordinary (potentially missing)
+message events interlacing with state events (see State DAGs[^msc4242], which
+replaces `auth_events` with `prev_state_events`, and benefits from a companion
+proposal to achieve higher rates of synchronization across the federation and
+improved rates of complete event dispersal).
 
 It can also more greatly optimize the `GET /state` endpoint, but this exists
 today mostly for legacy/compatibility reasons, so optimizing it is a lower
@@ -124,9 +156,16 @@ signal to admins divergent rooms (rate limiting the logs), and it can allow
 manual state comparison over federation if the admin is especially determined to
 align or diagnose their room(s).
 
+Furthermore, providing end-users and clients with the ability to quickly verify
+complete agreement between large amounts of local and remote data is a
+convenience gain and quality assurance to the average user. Who doesn't want to
+know they're working with the complete set?
+
+_AI Disclosure: mermaid diagrams generated via Gemini 3.1 Pro._
+
 <!-- References -->
 
-[^1]:
+[^msc4242]:
     _MSC4242: State DAGs by kegsay · Pull Request #4242 ·
     matrix-org/matrix-spec-proposals_
     <https://github.com/matrix-org/matrix-spec-proposals/pull/4242>
