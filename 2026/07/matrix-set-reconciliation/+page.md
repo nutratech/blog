@@ -11,16 +11,22 @@ provided by MSC4521.
 ## CS-API integrity
 
 Client developers are frequently blamed when servers fail to properly send down
-all required `/sync` data. Take `/v3` as a basic example (these issues can also
-affect `/v5`, but the application of set reconciliation to SSS is both highly
-speculative and out of scope for this blog post).
+all required `/sync` data. Take `/v3` as a basic example, and let's tally common
+reports. These issues can also affect `/v4` or `/v5` (SSS), but any role of set
+reconciliation in repairing SSS cache is both more speculative and technically
+out of scope for this blog post. The `/v3` sync contract is more well-studied
+and stable, and easier to model.
 
-Some commonly reported UI issues:
+Some commonly reported UI issues from Synapse users:
 
 1. **Left rooms reappearing** or sticking around;
 2. **State drift**, client resets (old profile photos/names, incorrect member
    list);
 3. Zombie **read receipts** (similar to left rooms, they keep reappearing).
+
+The Conduit family often experiences these same glitches. In some cases, the
+glitches may be deterministic: if you view from a second client (Element), you
+may see precisely the same data issue as your first, (Cinny).
 
 <!-- markdownlint-disable MD024 -->
 
@@ -85,7 +91,9 @@ then they know (and the client UI can confirm with a toast) that their cache was
 already healthy and fully in agreement with the server.
 
 This provides a cheap, scalable way to _prove_ to the end-user's client that it
-has all of the data the server has and none of it has been accidentally lost.
+has all of the data the server has and none of it has been accidentally lost
+during the occasionally error-prone shuffle of ongoing data along the
+incremental `/sync` pipeline.
 
 ---
 
