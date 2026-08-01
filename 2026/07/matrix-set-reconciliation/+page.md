@@ -1,8 +1,10 @@
 ---
-title: "Matrix: Set Reconciliation"
+title: "MSC4521: Set Reconciliation"
 date: "2026-07-30"
-description: "Synchronizing or proving set equality over the network."
+description:
+  "Use cases for synchronizing or proving set equality over the network."
 subtitle: "Proposed potential use cases for set reconciliation."
+tags: ["Matrix", "Proposals", "Applications"]
 ---
 
 This post contains a growing list of optimizations, new use cases, or features
@@ -35,15 +37,15 @@ may see precisely the same data issue as your first, (Cinny).
 ```mermaid
 %%{init: {"flowchart": {"subGraphTitleMargin": {"top": 15, "bottom": 15}}}}%%
 flowchart TD
-    subgraph CSAPI["[CSAPI] State/Room Checks"]
+    subgraph CSAPI["[CSAPI] Client cache and State/Room data"]
         direction TB
-        Client["Matrix Client (Local Cache C)"]
-        Server["Homeserver (Server State S)"]
+        Client["Client (Local cache C)"]
+        Server["Homeserver (Server store S)"]
 
         Client <-->|"1. Exchange sketches on /sync"| Server
-        Client -. "2. Detect outdated
-                      Rooms/State/EDUs (S - C)" .-> Client
-        Server ==>|"3. Push only delta updates"| Client
+        Client -. "2. Detect outdated data (S - C)
+                      [e.g., Rooms list/State/EDUs]" .-> Client
+        Server ==>|"3. Push only missing IDs or data"| Client
     end
 ```
 
@@ -102,16 +104,19 @@ incremental `/sync` pipeline.
 During live federation, `/state_ids` is a recommended fallback if
 `/get_missing_events` fails[^state_ids_fallback].
 
-<!-- TODO: add citation to official source that /state_ids is the fallback -->
+Some homeservers also implement an admin command to compare state with other
+homeservers in a given room, allowing manual diagnosis of local state issues and
+broad manual ranking of peers — estimating, by skimming data, which peer(s) has
+the best or most trustworthy state.
 
 See below table for rough estimate of network bandwidth savings on `/state_ids`.
 
 <!-- markdownlint-disable MD013 -->
 
-| Approach | Estimated bandwidth $(\|S\| = 10,000, d = 100)$ | Estimated round-trip time |
-| -------- | ----------------------------------------------: | ------------------------: |
-| Naive    |         50 bytes/event × 10,000 events = 500 KB |                   0.5 sec |
-| MSC4521  |    100 bytes/event × 100 events + 3 KB = 9.5 KB |                   0.2 sec |
+| Approach | Estimated bandwidth $(\|S\| = 10,000, d = 100)$ | Estimated round-trip time | Estimated DB/IO time, remote |
+| -------- | ----------------------------------------------: | ------------------------: | ---------------------------: |
+| Naive    |         50 bytes/event × 10,000 events = 500 KB |                   0.8 sec |                      0.6 sec |
+| MSC4521  |     100 bytes/event × 100 events + 3 KB = 13 KB |                   0.2 sec |                      0.1 sec |
 
 <!-- markdownlint-enable MD013 -->
 
@@ -122,13 +127,13 @@ See below table for rough estimate of network bandwidth savings on `/state_ids`.
 flowchart TD
     subgraph Federation["[Federation] State Sync"]
         direction TB
-        HS1["Homeserver A (State Set A)"]
-        HS2["Homeserver B (State Set B)"]
+        HS1["Homeserver A (State set A)"]
+        HS2["Homeserver B (State set B)"]
 
-        HS1 <-->|"1. Exchange Sketches"| HS2
-        HS1 -. "2. Identify Missing State (B - A)" .-> HS1
-        HS2 -. "2. Identify Missing State (A - B)" .-> HS2
-        HS1 ==>|"3. Fetch Only Missing Events"| HS2
+        HS1 <-->|"1. Exchange sketches" | HS2
+        HS1 -. "2. Identify missing state (B - A)" .-> HS1
+        HS2 -. "2. Identify missing state (A - B)" .-> HS2
+        HS1 ==>|"3. Fetch only missing data"| HS2
     end
 ```
 
@@ -170,7 +175,7 @@ know they're working with the complete set?
 
 <!-- markdownlint-disable MD033 -->
 
-_<u>AI Disclosure:</u> mermaid diagrams generated via Gemini 3.1 Pro._
+_<u>AI Disclosure:</u> mermaid diagrams adapted from Gemini 3.1 Pro output._
 
 <!-- markdownlint-enable MD033 -->
 
@@ -180,7 +185,7 @@ _<u>AI Disclosure:</u> mermaid diagrams generated via Gemini 3.1 Pro._
     Since SSS `/sync` has many more filters and properties and allows clients to
     configure custom timeline boundaries and selective state filters, correctly
     partitioning the set of server events — to precisely align with the client's
-    start boundary and limited view — may prove challenging.
+    start boundary / limited view and obey all filter rules — may be difficult.
 
 [^msc4242]:
     _MSC4242: State DAGs by kegsay · Pull Request #4242 ·
