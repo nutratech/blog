@@ -14,8 +14,8 @@ Client developers are frequently blamed when servers fail to properly send down
 all required `/sync` data. Take `/v3` as a basic example, and let's tally common
 reports. These issues can also affect `/v4` or `/v5` (SSS), but any role of set
 reconciliation in repairing SSS cache is both more speculative and technically
-out of scope for this blog post. The `/v3` sync contract is more well-studied
-and stable, and easier to model.
+out of scope[^v5_complexity] for this blog post. The `/v3` sync contract is more
+well-studied and stable, and easier to model.
 
 Some commonly reported UI issues from Synapse users:
 
@@ -174,7 +174,13 @@ _<u>AI Disclosure:</u> mermaid diagrams generated via Gemini 3.1 Pro._
 
 <!-- markdownlint-enable MD033 -->
 
-### References
+### Footnotes and references
+
+[^v5_complexity]:
+    Since SSS `/sync` has many more filters and properties and allows clients to
+    configure custom timeline boundaries and selective state filters, correctly
+    partitioning the set of server events — to precisely align with the client's
+    start boundary and limited view — may prove challenging.
 
 [^msc4242]:
     _MSC4242: State DAGs by kegsay · Pull Request #4242 ·
