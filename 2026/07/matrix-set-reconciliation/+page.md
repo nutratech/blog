@@ -1,8 +1,7 @@
 ---
 title: "MSC4521: Set Reconciliation"
 date: "2026-07-30"
-description:
-  "Use cases for synchronizing or proving set equality over the network."
+description: "Synchronizing differences or proving set equality over the wire."
 subtitle: "Proposed use cases for set reconciliation: federation and clients."
 tags: ["Matrix", "Proposals", "Applications"]
 ---
@@ -44,7 +43,7 @@ flowchart TD
         Server["Homeserver (Server store S)"]
 
         Client <-->|"1. Exchange sketches on /sync"| Server
-        Client -. "2. Detect outdated data (S - C)
+        Client -. "2. Detect stale data (S - C)
                       [e.g., Rooms list/State/EDUs]" .-> Client
         Server ==>|"3. Push only missing IDs or data"| Client
     end

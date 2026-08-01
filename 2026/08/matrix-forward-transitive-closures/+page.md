@@ -6,8 +6,8 @@ subtitle: 'Computing the "forward transitive closure" for given events.'
 tags: ["Matrix", "Performance", "Algorithms"]
 ---
 
-This is an advanced technique[^v21_fwd_note] not yet implemented by Synapse, nor
-any homeserver to my knowledge.
+This is an advanced technique[^v21_fwd_note] not yet implemented by Synapse
+[^synapse_note01], nor any homeserver to my knowledge.
 
 The performance gain depends on the fork depth. In general, this will not be
 very significant (even for the ~35K member "Matrix Community" space), since a
@@ -70,13 +70,23 @@ and follow-up was handwritten)._
 [^v21_fwd_note]:
     _"It is also possible to return only the relevant forwards reachable events
     rather than all forwards reachable events to speed up load times of forwards
-    reachable events, but this is out of scope for this guide."_ State Res v2.1:
-    An implementer's guide <https://matrix.org/docs/spec-guides/state-res-2.1/>
+    reachable events, but this is out of scope for this guide."_
+
+    State Res v2.1: An implementer's guide
+    <https://matrix.org/docs/spec-guides/state-res-2.1/>
 
 [^msc4000]:
-    _MSC4000: Forwards fill (`/backfill` forwards) by MadLittleMods · Pull
-    Request #4000 · matrix-org/matrix-spec-proposals_
+    This MSC can be solved in many ways. The forward transitive closure is one
+    possible tool in some circumstances.
+
+    _MSC4000: Forwards fill (`/backfill` forwards) by MadLittleMods._
     <https://github.com/matrix-org/matrix-spec-proposals/pull/4000>
 
 [^upsert_penalty]:
     As much as 90% to 100% of a room is backwards reachable from the frontier.
+
+[^synapse_note01]:
+    Synapse populates v2.1 forward reachable events incrementally (partially
+    on-demand, partially from persisted backward auth-chain). It does not have a
+    separate forward-closure index.
+    <https://github.com/element-hq/synapse/blob/5ed830b3b4c74c89d876cc07756c5d98a100cbed/synapse/storage/databases/main/event_federation.py#L2498-L2560>
