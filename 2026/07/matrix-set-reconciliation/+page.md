@@ -3,7 +3,7 @@ title: "MSC4521: Set Reconciliation"
 date: "2026-07-30"
 description:
   "Use cases for synchronizing or proving set equality over the network."
-subtitle: "Proposed potential use cases for set reconciliation."
+subtitle: "Proposed use cases for set reconciliation: federation and clients."
 tags: ["Matrix", "Proposals", "Applications"]
 ---
 
@@ -28,7 +28,8 @@ Some commonly reported UI issues from Synapse users:
 
 The Conduit family often experiences these same glitches. In some cases, the
 glitches may be deterministic: if you view from a second client (Element), you
-may see precisely the same data issue as your first, (Cinny).
+may see precisely the same data issue as your first, (Cinny); similarly, even
+after a cache clear and initial sync, the issue can sometimes stay.
 
 <!-- markdownlint-disable MD024 -->
 
@@ -54,10 +55,10 @@ Rather than falling back to the abysmally bad, often painfully slow "clear cache
 what it missed, either via the following `/sync` request or a custom exchange,
 endpoint, or negotiation.
 
-The user/client initiate this request via a new, less sledgehammery **"sync
+The user/client initiates this request via a new, less sledgehammery **"sync
 cache" button** (rather than the **infamous "clear cache"**). Clicking the
 button and retrieving the data then applies the missing delta and, if the server
-has a fully accurate state, restores a clean view to the client and user.
+has a fully accurate state, restores an accurate view to the client and user.
 
 ### Bonus consideration / thought experiment
 
@@ -80,17 +81,21 @@ clever math or encoding techniques[^syndrome_decoding_algebraic_sets] to compare
 large amounts of data over the wire _without_ needing to send or transmit
 significant amounts of it.
 
+<!-- markdownlint-disable MD033 -->
+
 The use case still exists if the `/sync` code is completely stabilized.
 End-users and client developers alike **may not fully trust the _incremental_
 model**, even for `/v3`, and they are well within their rights to request a
-nearly instant, **independent mechanism which cleverly encodes the _full_ data
-set**, and returns any missing events (and lists any extra the client may
+nearly instant, **<u>independent</u> mechanism which cleverly encodes the _full_
+data set**, and returns any missing events (and lists any extra the client may
 somehow have).
+
+<!-- markdownlint-enable MD033 -->
 
 If the user presses the "sync cache" or "repair cache" button (however we decide
 to label it), and their client receives back an empty list of missing events,
-then they know (and the client UI can confirm with a toast) that their cache was
-already healthy and fully in agreement with the server.
+then they know (and the client UI can confirm with a toast message) that their
+cache was already healthy and fully in agreement with the server.
 
 This provides a cheap, scalable way to _prove_ to the end-user's client that it
 has all of the data the server has and none of it has been accidentally lost
@@ -193,15 +198,19 @@ _<u>AI Disclosure:</u> mermaid diagrams adapted from Gemini 3.1 Pro output._
     <https://github.com/matrix-org/matrix-spec-proposals/pull/4242>
 
 [^state_ids_fallback]:
-    _Matrix Specification: Server-Server API — Checks performed on receipt of a
-    PDU._ See step 4 regarding fetching missing `prev_events` and falling back
-    to state resolution via `/state_ids`.
-    <https://spec.matrix.org/latest/server-server-api/#checks-performed-on-receipt-of-a-pdu>
+    "... server may use the `/get_missing_events` API to acquire the events..."
+    _Matrix Spec: Server-Server API — Backfilling and retrieving missing
+    events._
+    <https://spec.matrix.org/latest/server-server-api/#backfilling-and-retrieving-missing-events>
+    **NOTE:** The spec does _not_ explicitly require this, but it is implicitly
+    encouraged in a Complement test.
 
 [^syndrome_decoding_algebraic_sets]:
     _(Security probe of the proposed decode algorithm family. Not relevant to
     the MSC's above applications, since HTTP encryption and federation
     visibility checks already handle "security." Included purely for enjoyment
-    purposes.)_ "Variants of the Syndrome Decoding Problem and algebraic
-    cryptanalysis" (2023). _CSRC Presentations_.
+    purposes. It has some relevance to adversarial and crafted inputs.)_
+
+    "Variants of the Syndrome Decoding Problem and algebraic cryptanalysis"
+    (2023). _CSRC Presentations_.
     <https://csrc.nist.gov/presentations/2023/variants-of-the-syndrome-decoding-problem-and-alge>
