@@ -2,5 +2,5 @@ SHELL=/bin/bash
 
 .PHONY: format
 format:
-	prettier --prose-wrap always --print-width 80 --write .
+	prettier --write .
 	-markdownlint $$(git ls-files '*.md')
