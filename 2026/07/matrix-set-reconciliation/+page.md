@@ -16,8 +16,8 @@ Client developers are frequently blamed when servers fail to properly send down
 all required `/sync` data. Take `/v3` as a basic example, and let's tally common
 reports. These issues can also affect `/v4` or `/v5` (SSS), but any role of set
 reconciliation in repairing SSS cache is both more speculative and technically
-out of scope[^v5_complexity] for this blog post. The `/v3` sync contract is more
-well-studied and stable, and easier to model.
+out of scope[^v5_complexity] for this blog post. The `/v3` sync contract is
+better understood and easier to model.
 
 Some commonly reported UI issues from Synapse users:
 
@@ -28,7 +28,7 @@ Some commonly reported UI issues from Synapse users:
 
 The Conduit family often experiences these same glitches. In some cases, the
 glitches may be deterministic: if you view from a second client (Element), you
-may see precisely the same data issue as your first, (Cinny); similarly, even
+may see precisely the same data issue as your first (Cinny); similarly, even
 after a cache clear and initial sync, the issue can sometimes stay.
 
 <!-- markdownlint-disable MD024 -->
@@ -60,7 +60,7 @@ cache" button** (rather than the **infamous "clear cache"**). Clicking the
 button and retrieving the data then applies the missing delta and, if the server
 has a fully accurate state, restores an accurate view to the client and user.
 
-### Bonus consideration / thought experiment
+### Bonus consideration/thought experiment
 
 **Problem:** How do you know, other than trust, that the client actually holds
 all the relevant data requested from the server and that **none** has been lost?
@@ -86,9 +86,9 @@ significant amounts of it.
 The use case still exists if the `/sync` code is completely stabilized.
 End-users and client developers alike **may not fully trust the _incremental_
 model**, even for `/v3`, and they are well within their rights to request a
-nearly instant, **<u>independent</u> mechanism which cleverly encodes the _full_
-data set**, and returns any missing events (and lists any extra the client may
-somehow have).
+fast, **<u>independent</u> mechanism which cleverly encodes the _full_ data
+set** and returns any missing events (and lists any extra the client may somehow
+have).
 
 <!-- markdownlint-enable MD033 -->
 
@@ -97,9 +97,9 @@ to label it), and their client receives back an empty list of missing events,
 then they know (and the client UI can confirm with a toast message) that their
 cache was already healthy and fully in agreement with the server.
 
-This provides a cheap, scalable way to _prove_ to the end-user's client that it
-has all of the data the server has and none of it has been accidentally lost
-during the occasionally error-prone shuffle of ongoing data along the
+This provides a fast, reliable way to _prove_ to the end-user's client that it
+has all the data the server has, and that none of it has been accidentally lost
+during the potentially error-prone shuffle of ongoing data down and along the
 incremental `/sync` pipeline.
 
 ---
@@ -114,13 +114,14 @@ homeservers in a given room, allowing manual diagnosis of local state issues and
 broad manual ranking of peers — estimating, by skimming data, which peer(s) has
 the best or most trustworthy state.
 
-See below table for rough estimate of network bandwidth savings on `/state_ids`.
+See the table below for estimates of network bandwidth savings on the
+`/state_ids` endpoint.
 
 <!-- markdownlint-disable MD013 -->
 
 | Approach | Estimated bandwidth $(\|S\| = 10,000, d = 100)$ | Estimated round-trip time | Estimated DB/IO time, remote |
 | -------- | ----------------------------------------------: | ------------------------: | ---------------------------: |
-| Naive    |         50 bytes/event × 10,000 events = 500 KB |                   0.8 sec |                      0.6 sec |
+| Naive    |         50 bytes/event × 10,000 events = 500 KB |                   0.8 sec |      0.6 sec (+0.05 sec CPU) |
 | MSC4521  |     100 bytes/event × 100 events + 3 KB = 13 KB |                   0.2 sec |                      0.1 sec |
 
 <!-- markdownlint-enable MD013 -->
@@ -146,10 +147,16 @@ This MSC promises to reduce the network bandwidth of `/state_ids` exchanges and
 the overall allocation of strings into a set (generally slower than an optimized
 bitmap set comparison, but not a huge performance concern).
 
-In general, the `/state_ids` endpoint is not especially expensive, but it can be
-under heavy federation. The benefits become far more substantial if we consider
-large rooms (over 100,000 members) or if we widen the query to include _all_
-prior state events (not just currently resolved ones).
+In general, the `/state_ids` endpoint is not expensive, but it can be under
+heavy federation.
+
+The benefits become far more substantial if we consider large rooms (over
+100,000 members), or if we widen the query to include _all_ prior state events
+(not just currently resolved ones).
+
+The benefits become far more substantial if we consider large rooms (over
+100,000 members) or if the query includes all prior state events (not just the
+currently resolved set)
 
 A given server, if it diverges, can reach out to a list of other servers (either
 admin-defined, or randomly selected or ranked). By reaching out to 10 or 20
@@ -180,11 +187,12 @@ know they're working with the complete set?
 
 <!-- markdownlint-disable MD033 -->
 
-_<u>AI Disclosure:</u> mermaid diagrams adapted from Gemini 3.1 Pro output._
+_<u>AI Disclosure:</u> mermaid diagrams adapted from Gemini 3.1 Pro output.
+Grammarly Writing Assistant consulted for intermediate proofreading._
 
 <!-- markdownlint-enable MD033 -->
 
-### Footnotes and references
+### Footnotes and sources consulted
 
 [^v5_complexity]:
     Since SSS `/sync` has many more filters and properties and allows clients to
@@ -206,11 +214,5 @@ _<u>AI Disclosure:</u> mermaid diagrams adapted from Gemini 3.1 Pro output._
     encouraged in a Complement test.
 
 [^syndrome_decoding_algebraic_sets]:
-    _(Security probe of the proposed decode algorithm family. Not relevant to
-    the MSC's above applications, since HTTP encryption and federation
-    visibility checks already handle "security." Included purely for enjoyment
-    purposes. It has some relevance to adversarial and crafted inputs.)_
-
-    "Variants of the Syndrome Decoding Problem and algebraic cryptanalysis"
-    (2023). _CSRC Presentations_.
-    <https://csrc.nist.gov/presentations/2023/variants-of-the-syndrome-decoding-problem-and-alge>
+    _Quadratic Modelings of Syndrome Decoding_
+    <https://arxiv.org/html/2412.04848v1>
