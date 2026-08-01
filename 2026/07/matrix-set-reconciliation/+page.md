@@ -68,8 +68,9 @@ inconvenient band-aid to repair edge cases like this.
 This is clearly not ideal. The user is stuck manually visually scanning to check
 for potential signs of a de-sync issue, and must perform a full cache clear and
 initial sync (which can be slow). The more interesting approach is to apply
-clever math tricks or encoding techniques to compare large amounts of data over
-the wire _without_ needing to send or transmit significant amounts of it.
+clever math or encoding techniques[^syndrome_decoding_algebraic_sets] to compare
+large amounts of data over the wire _without_ needing to send or transmit
+significant amounts of it.
 
 The use case still exists if the `/sync` code is completely stabilized.
 End-users and client developers alike **may not fully trust the _incremental_
@@ -86,14 +87,12 @@ already healthy and fully in agreement with the server.
 This provides a cheap, scalable way to _prove_ to the end-user's client that it
 has all of the data the server has and none of it has been accidentally lost.
 
-<!-- TODO: finish explanation. -->
-
 ---
 
 ## Federation state synchronization
 
 During live federation, `/state_ids` is a recommended fallback if
-`/get_missing_events` fails.
+`/get_missing_events` fails[^state_ids_fallback].
 
 <!-- TODO: add citation to official source that /state_ids is the fallback -->
 
@@ -161,11 +160,29 @@ complete agreement between large amounts of local and remote data is a
 convenience gain and quality assurance to the average user. Who doesn't want to
 know they're working with the complete set?
 
-_AI Disclosure: mermaid diagrams generated via Gemini 3.1 Pro._
+<!-- markdownlint-disable MD033 -->
 
-<!-- References -->
+_<u>AI Disclosure:</u> mermaid diagrams generated via Gemini 3.1 Pro._
+
+<!-- markdownlint-enable MD033 -->
+
+### References
 
 [^msc4242]:
     _MSC4242: State DAGs by kegsay · Pull Request #4242 ·
     matrix-org/matrix-spec-proposals_
     <https://github.com/matrix-org/matrix-spec-proposals/pull/4242>
+
+[^state_ids_fallback]:
+    _Matrix Specification: Server-Server API — Checks performed on receipt of a
+    PDU._ See step 4 regarding fetching missing `prev_events` and falling back
+    to state resolution via `/state_ids`.
+    <https://spec.matrix.org/latest/server-server-api/#checks-performed-on-receipt-of-a-pdu>
+
+[^syndrome_decoding_algebraic_sets]:
+    _(Security probe of the proposed decode algorithm family. Not relevant to
+    the MSC's above applications, since HTTP encryption and federation
+    visibility checks already handle "security." Included purely for enjoyment
+    purposes.)_ "Variants of the Syndrome Decoding Problem and algebraic
+    cryptanalysis" (2023). _CSRC Presentations_.
+    <https://csrc.nist.gov/presentations/2023/variants-of-the-syndrome-decoding-problem-and-alge>
