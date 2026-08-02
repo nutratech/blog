@@ -30,13 +30,13 @@ glitches may be deterministic: if you view from a second client (Element), you
 may see precisely the same data issue as your first (Cinny); similarly, even
 after a cache clear and initial sync, the issue can sometimes stay.
 
-On the other hand, clients can also sometimes maintain perfect caches.
+On the other hand, clients can also sometimes corrupt their own caches.
 Especially during development, when code is being tested and tweaked by
-developers and run locally, it is likely that the client cache needs clearing.
-If the client developer is testing on a personal account with may rooms, a fresh
+developers and run locally, the client cache likely must be cleared. If the
+client developer is testing on a personal account with many rooms, a fresh
 initial sync won't be fast, and a quicker reconciliation mechanism would likely
-be welcome (this is just a developer experience consideration, we will discuss
-the end-user experience a bit more below).
+be welcome (this is just a developer-experience consideration; the end-user
+experience discussion is below).
 
 <!-- markdownlint-disable MD024 -->
 
@@ -72,14 +72,14 @@ has a fully accurate state, restores an accurate view to the client and user.
 **Problem:** How do you know, other than trust, that the client actually holds
 all the relevant data requested from the server and that **none** has been lost?
 
-The conventional answer is we just trust the software and the server developers.
-But homeserver development is notoriously difficult and tedious. Blindly
-trusting that nothing has fallen through the cracks leaves the end-user with no
-quick way to verify their local store. If their eye catches something in their
-Element or Cinny UI client, they might suspect a state reset or cache window
-miss has occurred. Every user instinctively reaches for the sledgehammer
-solution, the notorious "reset cache" button, which is so often used as an
-inconvenient band-aid to repair edge cases like this.
+The conventional answer is we trust the software and the server developers. But
+homeserver development is notoriously difficult and tedious. Blindly trusting
+that nothing has fallen through the cracks leaves the end-user with no quick way
+to verify their local store. If their eye catches something in their Element or
+Cinny UI client, they might suspect a state reset or cache window miss has
+occurred. Every user instinctively reaches for the sledgehammer solution, the
+notorious "reset cache" button, which is so often used as an inconvenient
+band-aid to repair edge cases like this.
 
 This is clearly not ideal. The user is stuck manually visually scanning to check
 for potential signs of a de-sync issue, and must perform a full cache clear and
@@ -151,15 +151,11 @@ flowchart TD
 ```
 
 This MSC promises to reduce the network bandwidth of `/state_ids` exchanges and
-the overall allocation of strings into a set (generally slower than an optimized
-bitmap set comparison, but not a huge performance concern).
+the overall allocation of strings into a set, which is generally slower than an
+optimized bitmap set comparison but not a pressing performance concern.
 
 In general, the `/state_ids` endpoint is not expensive, but it can be under
 heavy federation.
-
-The benefits become far more substantial if we consider large rooms (over
-100,000 members), or if we widen the query to include _all_ prior state events
-(not just currently resolved ones).
 
 The benefits become far more substantial if we consider large rooms (over
 100,000 members) or if the query includes all prior state events (not just the
@@ -170,12 +166,11 @@ sets. After fetching them over the network and merging them into their local
 store, some implementations will then compute the union(s) and intersection(s)
 over `base64url` strings, rather than `int64` sets or `RoaringTreemap` layouts.
 This only becomes a concern during peak hours or higher federation rates, when
-operating on strings can noticeably things down. So, while generally trivial,
-moving to a `shorteventid` cache is a goal for all implementations.
+operating on strings can noticeably slow things down. So, while generally
+trivial, moving to a `shorteventid` cache is a goal for all implementations.
 
-MSC4521 can also more greatly optimize the `GET /state` endpoint, but this
-exists today mostly for legacy/compatibility reasons, so optimizing it is a
-lower priority.
+MSC4521 can also optimize the `GET /state` endpoint, but this exists today
+mostly for legacy/compatibility reasons, so optimizing it is a lower priority.
 
 ### Possible remediation route/admin command
 
@@ -193,19 +188,19 @@ federation and improved rates of complete event dispersal).
 
 Applying "periodic" room-state reconciliation between other homeservers, MSC4521
 provides greater assurance of consensus among "authoritative" peers. It can
-signal to admins divergent rooms (rate limiting the logs), and it can allow
-manual state comparison over federation if the admin is especially determined to
-align or diagnose their room(s).
+signal divergent rooms to admins (via logs) and allow manual state comparison
+over federation if the admin is especially determined to align or diagnose their
+room(s).
 
 Furthermore, providing end-users and clients with the ability to quickly verify
-complete agreement between large amounts of local and remote data is a
-convenience gain and quality assurance to the average user. Who doesn't want to
-know they're working with the complete set?
+complete agreement between large sets of local and remote data is a convenience
+gain and quality assurance to the average user. Who doesn't want to know they're
+working with the complete set?
 
 <!-- markdownlint-disable MD033 -->
 
 _<u>AI Disclosure:</u> mermaid diagrams adapted from Gemini 3.1 Pro output.
-Grammarly Writing Assistant consulted for intermediate proofreading._
+Grammarly Writing Assistant (unpaid) consulted for basic grammar._
 
 <!-- markdownlint-enable MD033 -->
 
@@ -234,8 +229,8 @@ Grammarly Writing Assistant consulted for intermediate proofreading._
 [^syndrome_decoding_algebraic_sets]:
     The MSC4521 proposal combines ideas and techniques from different papers,
     but this one contributes the "strata estimator" idea. The "invertible bloom
-    filter" discussed in this paper is _not_ used but is replaced with the
-    BCH/field encoding used in `minisketch`.
+    filter" discussed in this paper is _not_ used in MSC4521, which uses the
+    BCH/field encoding from `minisketch`.
 
     _What’s the Difference? Efficient Set Reconciliation without Prior Context_
     (2011).
