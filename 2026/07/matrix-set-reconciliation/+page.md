@@ -214,5 +214,11 @@ Grammarly Writing Assistant consulted for intermediate proofreading._
     in Complement tests.
 
 [^syndrome_decoding_algebraic_sets]:
-    _Quadratic Modelings of Syndrome Decoding_
-    <https://arxiv.org/html/2412.04848v1>
+    The MSC4521 proposal combines ideas and techniques from different papers,
+    but this one contributes the "strata estimator" idea. The "invertible bloom
+    filter" discussed in this paper is _not_ used but is replaced with the
+    BCH/field encoding used in `minisketch`.
+
+    _What’s the Difference? Efficient Set Reconciliation without Prior Context_
+    (2011).
+    <https://conferences.sigcomm.org/sigcomm/2011/papers/sigcomm/p218.pdf>
