@@ -30,6 +30,14 @@ glitches may be deterministic: if you view from a second client (Element), you
 may see precisely the same data issue as your first (Cinny); similarly, even
 after a cache clear and initial sync, the issue can sometimes stay.
 
+On the other hand, clients can also sometimes maintain perfect caches.
+Especially during development, when code is being tested and tweaked by
+developers and run locally, it is likely that the client cache needs clearing.
+If the client developer is testing on a personal account with may rooms, a fresh
+initial sync won't be fast, and a quicker reconciliation mechanism would likely
+be welcome (this is just a developer experience consideration, we will discuss
+the end-user experience a bit more below).
+
 <!-- markdownlint-disable MD024 -->
 
 ### How set reconciliation can help
@@ -155,7 +163,21 @@ The benefits become far more substantial if we consider large rooms (over
 
 The benefits become far more substantial if we consider large rooms (over
 100,000 members) or if the query includes all prior state events (not just the
-currently resolved set)
+currently resolved set).
+
+State res (v2.1 particularly) needs the "union" and "intersection" of some event
+sets. After fetching them over the network and merging them into their local
+store, some implementations will then compute the union(s) and intersection(s)
+over `base64url` strings, rather than `int64` sets or `RoaringTreemap` layouts.
+This only becomes a concern during peak hours or higher federation rates, when
+operating on strings can noticeably things down. So, while generally trivial,
+moving to a `shorteventid` cache is a goal for all implementations.
+
+MSC4521 can also more greatly optimize the `GET /state` endpoint, but this
+exists today mostly for legacy/compatibility reasons, so optimizing it is a
+lower priority.
+
+### Possible remediation route/admin command
 
 A given server, if it diverges, can reach out to a list of other servers (either
 admin-defined, or randomly selected or ranked). By reaching out to 10 or 20
@@ -164,12 +186,8 @@ increase their chances of filling in gaps/holes. A strict traversal and
 collection of state IDs today is complicated by ordinary (potentially missing)
 message events interlacing with state events (see State DAGs[^msc4242], which
 replaces `auth_events` with `prev_state_events`, and benefits from a companion
-proposal to achieve higher rates of synchronization across the federation and
-improved rates of complete event dispersal).
-
-It can also more greatly optimize the `GET /state` endpoint, but this exists
-today mostly for legacy/compatibility reasons, so optimizing it is a lower
-priority.
+proposal like MSC4521 to achieve higher rates of synchronization across the
+federation and improved rates of complete event dispersal).
 
 ### Future considerations
 
