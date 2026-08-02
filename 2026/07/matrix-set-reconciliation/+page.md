@@ -124,14 +124,10 @@ the best or most trustworthy state.
 See the table below for estimates of network bandwidth savings on the
 `/state_ids` endpoint.
 
-<!-- markdownlint-disable MD013 -->
-
-| Approach | Estimated bandwidth $(\|S\| = 10,000, d = 100)$ | Estimated round-trip time | Estimated DB/IO time, remote |
-| -------- | ----------------------------------------------: | ------------------------: | ---------------------------: |
-| Naive    |         50 bytes/event × 10,000 events = 500 KB |                   0.8 sec |      0.6 sec (+0.05 sec CPU) |
-| MSC4521  |     100 bytes/event × 100 events + 3 KB = 13 KB |                   0.2 sec |                      0.1 sec |
-
-<!-- markdownlint-enable MD013 -->
+| Approach | Estimated bandwidth $(\|S\| = 10,000, d = 100)$ |
+| -------- | ----------------------------------------------: |
+| Naive    |         50 bytes/event × 10,000 events = 500 KB |
+| MSC4521  |     100 bytes/event × 100 events + 3 KB = 13 KB |
 
 ### How set reconciliation can help
 
@@ -170,7 +166,8 @@ operating on strings can noticeably slow things down. So, while generally
 trivial, moving to a `shorteventid` cache is a goal for all implementations.
 
 MSC4521 can also optimize the `GET /state` endpoint, but this exists today
-mostly for legacy/compatibility reasons, so optimizing it is a lower priority.
+mostly for initial full joins and perhaps for legacy/compatibility reasons, so
+optimizing it is a lower priority.
 
 ### Possible remediation route/admin command
 
