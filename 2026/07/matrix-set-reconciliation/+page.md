@@ -183,7 +183,7 @@ federation and improved rates of consistency and rapid event dispersal).
 
 ### Cryptocurrencies and other prior arts
 
-Bitcoin merged their equivalent years ago and recently integrated it with a
+Bitcoin merged its equivalent years ago and recently integrated it with a
 gossip-based middle tier[^bitcoin_minisketch_doc].
 
 Ethereum also has relevant whitepapers and proposals, some of which are in
@@ -192,8 +192,8 @@ production[^ethereum_blog].
 One of the main sources in the MSC[^optimal_polynom] details a one-to-many
 broadcast scheme.
 
-Similar reconciliation results are obtained for example in git, DynamoDB
-[^db_replica_repair], and other peer-to-peer frameworks, even if different
+Similar reconciliation results are obtained—for example in Git, DynamoDB
+[^db_replica_repair], and other peer-to-peer frameworks—even if different
 methods are used.
 
 ### Future considerations
