@@ -209,8 +209,9 @@ Grammarly Writing Assistant consulted for intermediate proofreading._
     _Matrix Spec: Server-Server API — Backfilling and retrieving missing
     events._
     <https://spec.matrix.org/latest/server-server-api/#backfilling-and-retrieving-missing-events>
-    **NOTE:** The spec does _not_ explicitly require this, but it is implicitly
-    encouraged in a Complement test.
+
+    **NOTE:** The spec does _not_ explicitly require this, but it is encouraged
+    in Complement tests.
 
 [^syndrome_decoding_algebraic_sets]:
     _Quadratic Modelings of Syndrome Decoding_

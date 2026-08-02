@@ -4,6 +4,7 @@ date: "2026-08-01"
 description: "Advanced performance trick, not implemented by Synapse."
 subtitle: 'Computing the "forward transitive closure" for given events.'
 tags: ["Matrix", "Performance", "Algorithms"]
+draft: true
 ---
 
 This is an advanced technique[^v21_fwd_note] not yet implemented by Synapse
