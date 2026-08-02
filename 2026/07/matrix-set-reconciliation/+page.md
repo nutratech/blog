@@ -169,6 +169,23 @@ MSC4521 can also optimize the `GET /state` endpoint, but this is mostly for
 initial full joins and perhaps for legacy/compatibility reasons. Optimizing it
 is therefore either not under this MSC’s purview or a lower priority.
 
+### More accurate state on initial join
+
+Whether using full joins or fast partial joins, the spec's traditional reliance
+on a single server's point of view is fragile.
+
+Often, a single server has an incomplete or slightly corrupt state.
+
+It's therefore prudent that we update the spec to compare and merge states from
+multiple servers before joining.
+
+An important barrier to overcome here is extremely rapid, real-time acquisition
+and operation on large lists of state IDs. MSC4521 can reduce the total network
+and processing latency for many of these requests to under 50 ms combined,
+making real time multi-server "state merges" a reality and allowing for more
+accurate state upon joining, cutting down on the perpetual cycle of corrupt
+state.
+
 ### Possible remediation route/admin command
 
 A given server, if it diverges, can reach out to a list of other servers (either
