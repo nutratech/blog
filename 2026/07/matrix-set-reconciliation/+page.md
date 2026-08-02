@@ -34,8 +34,8 @@ On the other hand, clients can also sometimes corrupt their own caches.
 Especially during development, when code is being tested and tweaked by
 developers and run locally, the client cache likely must be cleared. If the
 client developer is testing on a personal account with many rooms, a fresh
-initial sync won't be fast, and a quicker reconciliation mechanism would likely
-be welcome (this is just a developer-experience consideration; the end-user
+initial sync won't be fast, and a fast reconciliation mechanism would likely be
+welcome (this is just a developer-experience consideration; the end-user
 experience discussion is below).
 
 <!-- markdownlint-disable MD024 -->
@@ -165,9 +165,9 @@ This only becomes a concern during peak hours or higher federation rates, when
 operating on strings can noticeably slow things down. So, while generally
 trivial, moving to a `shorteventid` cache is a goal for all implementations.
 
-MSC4521 can also optimize the `GET /state` endpoint, but this exists today
-mostly for initial full joins and perhaps for legacy/compatibility reasons, so
-optimizing it is a lower priority.
+MSC4521 can also optimize the `GET /state` endpoint, but this is mostly for
+initial full joins and perhaps for legacy/compatibility reasons. Optimizing it
+is therefore either not under this MSC’s purview or a lower priority.
 
 ### Possible remediation route/admin command
 
@@ -179,15 +179,30 @@ collection of state IDs today is complicated by ordinary (potentially missing)
 message events interlacing with state events (see State DAGs[^msc4242], which
 replaces `auth_events` with `prev_state_events`, and benefits from a companion
 proposal like MSC4521 to achieve higher rates of synchronization across the
-federation and improved rates of complete event dispersal).
+federation and improved rates of consistency and rapid event dispersal).
+
+### Cryptocurrencies and other prior arts
+
+Bitcoin merged their equivalent years ago and recently integrated it with a
+gossip-based middle tier[^bitcoin_minisketch_doc].
+
+Ethereum also has relevant whitepapers and proposals, some of which are in
+production[^ethereum_blog].
+
+One of the main sources in the MSC[^optimal_polynom] details a one-to-many
+broadcast scheme.
+
+Similar reconciliation results are obtained for example in git, DynamoDB
+[^db_replica_repair], and other peer-to-peer frameworks, even if different
+methods are used.
 
 ### Future considerations
 
-Applying "periodic" room-state reconciliation between other homeservers, MSC4521
-provides greater assurance of consensus among "authoritative" peers. It can
-signal divergent rooms to admins (via logs) and allow manual state comparison
-over federation if the admin is especially determined to align or diagnose their
-room(s).
+Applying "periodic" room-state reconciliation between other homeservers, a
+future MSC can apply MSC4521 for greater assurance of convergence with
+"authoritative" peers. It can signal divergent rooms to admins (via logs) and
+allow manual state comparison over federation if the admin is especially
+determined to align or diagnose their room(s).
 
 Furthermore, providing end-users and clients with the ability to quickly verify
 complete agreement between large sets of local and remote data is a convenience
@@ -232,3 +247,34 @@ Grammarly Writing Assistant (unpaid) consulted for basic grammar._
     _What’s the Difference? Efficient Set Reconciliation without Prior Context_
     (2011).
     <https://conferences.sigcomm.org/sigcomm/2011/papers/sigcomm/p218.pdf>
+
+[^bitcoin_minisketch_doc]:
+    See: "2025, Gossip analysis to inform minisketch-like set reconciliation
+    protocol for LN"
+
+    _Minisketch | Bitcoin Optech_ <https://bitcoinops.org/en/topics/minisketch/>
+
+[^ethereum_blog]:
+    _"Ethereum's ERC-20 tokens, typically fungible and standardized, behave very
+    differently from NFTs (non-fungible tokens) that follow ERC-721 or ERC-1155
+    standards. This variation in blockchain behavior introduces complexities in
+    reconciliation..."_
+
+    Crypto Reconciliation: What It Is & Why It Matters
+    <https://www.osfin.ai/blog/crypto-reconciliation>
+
+[^optimal_polynom]:
+    _"... these protocols can be adapted to work over a broadcast channel,
+    allowing many clients to reconcile with one host based on a single
+    broadcast, even if each client is missing a different subset."_
+
+    Set reconciliation with nearly optimal communication complexity | IEEE
+    Journals & Magazine <https://ieeexplore.ieee.org/document/1226606>
+
+[^db_replica_repair]:
+    See slide 35 for some distributed database proposals/potential improvement
+    designs.
+
+    _Yours, Mine, and Ours: Efficient Set Reconciliation in O(n log n) of the
+    SET DIFFERENCE by Pat Helland and Daniel May._
+    <https://www.slideshare.net/slideshow/yours-mine-and-ours-efficient-set-reconciliation-in-o-n-log-n-of-the-set-difference-by-pat-helland-and-daniel-may/286402797>
