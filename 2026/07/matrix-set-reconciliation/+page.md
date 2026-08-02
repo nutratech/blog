@@ -192,9 +192,9 @@ production[^ethereum_blog].
 One of the main sources in the MSC[^optimal_polynom] details a one-to-many
 broadcast scheme.
 
-Similar reconciliation results are obtained—for example in Git, DynamoDB
-[^db_replica_repair], and other peer-to-peer frameworks—even if different
-methods are used.
+Similar reconciliation results are obtained—for example in Git,
+DynamoDB[^db_replica_repair], and other peer-to-peer frameworks—even if
+different methods are used.
 
 ### Future considerations
 
