@@ -34,15 +34,15 @@ execution nightmare into a lightweight, synchronous check.
 
 To prove an arbiter acted maliciously, a verifier must first establish the
 causal history between the conflicting epochs. Traditionally, this meant pulling
-down full event payloads over the network ($O(N \cdot S_{\text{event}})$ bytes).
+down full event payloads over the network (`O(N · S_event)` bytes).
 
 **MSC4511 (Protocol-Layer Cryptographic Pruning)** introduces split
 canonicalization. Instead of monolithic event hashes, MSC4511 generates an
 `event_root` from isolated metadata leaves.
 
 - **Sparse Topology Queries:** Verifiers can request sparse topological metadata
-  instead of full events, dropping network transfer to
-  $O(N \cdot S_{\text{meta}} + P)$ bytes.
+  instead of full events, dropping network transfer to `O(N · S_meta + P)`
+  bytes.
 - **Merkleized Verification:** The fraud proof only needs to supply the Merkle
   paths for topological components (like `prev_events_hash`, `auth_events_hash`,
   and `event_header_root`).
@@ -78,9 +78,8 @@ execution optimizations:
   hashes embedded in the trie nodes, completely skipping traversing unchanged
   state.
 - **Targeted Delta Isolation:** Computation is strictly isolated to the
-  divergent tuple set $\Delta$. The engine isolates this in
-  $O(\vert{}\Delta\vert{} \cdot \log_{32} N)$ time, sidestepping a full scan of
-  the room's $N$ elements entirely.
+  divergent tuple set $\Delta$. The engine isolates this in `O(|Δ| · log₃₂ N)`
+  time, sidestepping a full scan of the room's $N$ elements entirely.
 
 ## Conclusion
 

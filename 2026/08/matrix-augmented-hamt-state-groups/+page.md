@@ -5,7 +5,6 @@ description:
   "Replacing delta-chain state groups with a content-addressed CHAMP trie keyed
   to MSC4500's LtHash16 accumulator — and what it looked like to rip the old
   design out of a real homeserver."
-draft: true
 ---
 
 Every Matrix homeserver has to answer the same question, constantly: "what was
@@ -160,16 +159,7 @@ The `Conduit` → `continuwuity` state layer used a `state_compressor` module �
 the classic delta-chain design. Porting the room state service over to the
 augmented HAMT meant deleting that entire module (733 lines gone in one commit)
 and replacing it with a much smaller `state_hamt` service backed by `rezzy`'s
-generic HAMT crate:
-
-```text
- src/service/rooms/state/mod.rs                       | 465 +++++++++++++++--------------
- src/service/rooms/state_compressor/mod.rs             | 733 -----------------------------------
- src/service/rooms/state_hamt/mod.rs                   |  34 ++
- src/service/rooms/state_hamt/store.rs                 | 162 +++++++++
- src/service/rooms/state_cache/update.rs               | 108 +++++++
- src/service/rooms/state/tests.rs                       | 265 +++++++++++++++
-```
+generic HAMT crate.
 
 The generic trie itself is deliberately storage-agnostic — `mod.rs` for the
 node/bitmap machinery, `codec.rs` for a dense on-disk encoding of persisted
