@@ -4,7 +4,7 @@ date: "2026-08-01"
 description: "Possibly superior algorithm for state resolution."
 subtitle: "Lattice fold algorithm as possible iterative sort alternative."
 tags: ["Matrix", "Performance", "Algorithms"]
-# draft: true
+draft: true
 ---
 
 This post outlines an alternative approach to Matrix state resolution's

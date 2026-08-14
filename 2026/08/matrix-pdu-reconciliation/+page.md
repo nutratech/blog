@@ -4,6 +4,7 @@ date: "2026-07-30"
 description: "Synchronizing differences or proving set equality over the wire."
 subtitle: "Proposed use cases for set reconciliation: federation and clients."
 tags: ["Matrix", "Proposals", "MSC4521", "Applications"]
+draft: true
 ---
 
 This post contains a growing list of optimizations, new use cases, or features

@@ -1,10 +1,14 @@
 ---
-title: "Matrix: Faster State Groups via an Augmented HAMT"
+title: "Faster Matrix state groups via an HAMT data structure"
 date: "2026-08-13"
 description:
   "Replacing delta-chain state groups with a content-addressed CHAMP trie keyed
   to MSC4500's LtHash16 accumulator — and what it looked like to rip the old
   design out of a real homeserver."
+subtitle:
+  "State of the art proposal for faster state progression and point reads."
+tags: ["Matrix", "Proposals", "Algorithms"]
+draft: true
 ---
 
 Every Matrix homeserver has to answer the same question, constantly: "what was
