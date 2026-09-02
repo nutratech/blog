@@ -19,6 +19,17 @@ This post derives the break-even formulas for Bloom, Cuckoo, Counting Quotient,
 and a naive remainder-probe baseline, then sweeps false-positive rates from
 0.01% to 1% to find the cross-over points under fixed network latency.
 
+<!-- markdownlint-disable MD013 -->
+
+[The five filters](#the-five-filters) · [Space overhead](#space-overhead) ·
+[The filter protocol](#the-filter-protocol) ·
+[Break-even formula](#break-even-formula) ·
+[Cross-over results](#cross-over-results) ·
+[FPR sensitivity analysis](#fpr-sensitivity-analysis) ·
+[Decision table](#decision-table) · [Reproducibility](#reproducibility)
+
+<!-- markdownlint-enable MD013 -->
+
 ## The five filters
 
 ### Bloom filter
@@ -270,24 +281,24 @@ reference.
 
 <!-- markdownlint-disable MD013 MD060 -->
 
-| Latency | Budget    | Cuckoo Δ | Remainder Δ | CQF Δ  | Bloom Δ | Hybrid Δ |
-| ------- | --------- | -------- | ----------- | ------ | ------- | -------- |
-| 0ms     | 1,000,000 | never    | never       | never  | never   | never    |
-| 0ms     | 4,000,000 | never    | never       | never  | never   | never    |
-| 0ms     | 8,000,000 | never    | never       | never  | never   | never    |
-| 0ms     | 16,000,000| never    | never       | never  | never   | never    |
-| 20ms    | 1,000,000 | 50,000   | 50,000      | 25,000 | 25,000  | 50,000   |
-| 20ms    | 4,000,000 | 50,000   | 50,000      | 25,000 | 25,000  | 50,000   |
-| 20ms    | 8,000,000 | 50,000   | 50,000      | 25,000 | 25,000  | 50,000   |
-| 20ms    | 16,000,000| 50,000   | 50,000      | 25,000 | 25,000  | 50,000   |
-| 30ms    | 1,000,000 | 25,000   | 25,000      | 10,000 | 10,000  | 25,000   |
-| 30ms    | 4,000,000 | 25,000   | 25,000      | 10,000 | 10,000  | 25,000   |
-| 30ms    | 8,000,000 | 25,000   | 25,000      | 10,000 | 10,000  | 25,000   |
-| 30ms    | 16,000,000| 25,000   | 25,000      | 10,000 | 10,000  | 25,000   |
-| 40ms    | 1,000,000 | 10,000   | 10,000      | 5,000  | 5,000   | 10,000   |
-| 40ms    | 4,000,000 | 10,000   | 10,000      | 5,000  | 5,000   | 10,000   |
-| 40ms    | 8,000,000 | 10,000   | 10,000      | 5,000  | 5,000   | 10,000   |
-| 40ms    | 16,000,000| 10,000   | 10,000      | 5,000  | 5,000   | 10,000   |
+| Latency | Budget     | Cuckoo Δ | Remainder Δ | CQF Δ  | Bloom Δ | Hybrid Δ |
+| ------- | ---------- | -------- | ----------- | ------ | ------- | -------- |
+| 0ms     | 1,000,000  | never    | never       | never  | never   | never    |
+| 0ms     | 4,000,000  | never    | never       | never  | never   | never    |
+| 0ms     | 8,000,000  | never    | never       | never  | never   | never    |
+| 0ms     | 16,000,000 | never    | never       | never  | never   | never    |
+| 20ms    | 1,000,000  | 50,000   | 50,000      | 25,000 | 25,000  | 50,000   |
+| 20ms    | 4,000,000  | 50,000   | 50,000      | 25,000 | 25,000  | 50,000   |
+| 20ms    | 8,000,000  | 50,000   | 50,000      | 25,000 | 25,000  | 50,000   |
+| 20ms    | 16,000,000 | 50,000   | 50,000      | 25,000 | 25,000  | 50,000   |
+| 30ms    | 1,000,000  | 25,000   | 25,000      | 10,000 | 10,000  | 25,000   |
+| 30ms    | 4,000,000  | 25,000   | 25,000      | 10,000 | 10,000  | 25,000   |
+| 30ms    | 8,000,000  | 25,000   | 25,000      | 10,000 | 10,000  | 25,000   |
+| 30ms    | 16,000,000 | 25,000   | 25,000      | 10,000 | 10,000  | 25,000   |
+| 40ms    | 1,000,000  | 10,000   | 10,000      | 5,000  | 5,000   | 10,000   |
+| 40ms    | 4,000,000  | 10,000   | 10,000      | 5,000  | 5,000   | 10,000   |
+| 40ms    | 8,000,000  | 10,000   | 10,000      | 5,000  | 5,000   | 10,000   |
+| 40ms    | 16,000,000 | 10,000   | 10,000      | 5,000  | 5,000   | 10,000   |
 
 <!-- markdownlint-enable MD013 MD060 -->
 
@@ -491,15 +502,19 @@ competitive.
 
 ## Decision table
 
-| Scenario                                       | Winner    |
-| ---------------------------------------------- | --------- |
-| Low latency (≤ 5ms), any Δ                     | PinSketch |
-| High latency (≥ 20ms), Δ < 5K                  | PinSketch |
-| High latency, Δ > 25K, insert-only             | Cuckoo    |
-| High latency, Δ > 25K, need counting/deletion  | CQF       |
-| High latency, Δ > 25K, simplest implementation | Bloom     |
-| Small n (≤ 10K), need full set recovery        | GCS       |
-| Unknown workload / mixed                       | Hybrid    |
+<!-- markdownlint-disable MD013 -->
+
+| Scenario                                       | Winner                                  |
+| ---------------------------------------------- | --------------------------------------- |
+| Low latency (≤ 5ms), any Δ                     | [PinSketch](#pinsketch-baseline-no-fpr) |
+| High latency (≥ 20ms), Δ < 5K                  | [PinSketch](#pinsketch-baseline-no-fpr) |
+| High latency, Δ > 25K, insert-only             | [Cuckoo](#cuckoo-filter)                |
+| High latency, Δ > 25K, need counting/deletion  | [CQF](#counting-quotient-filter-cqf)    |
+| High latency, Δ > 25K, simplest implementation | [Bloom](#bloom-filter)                  |
+| Small n (≤ 10K), need full set recovery        | [GCS](#golomb-coded-set-bip-158)        |
+| Unknown workload / mixed                       | [Hybrid](#cross-over-results)           |
+
+<!-- markdownlint-enable MD013 -->
 
 The **hybrid** strategy uses a filter for small overflow buckets (≤ 2× decode
 capacity) and falls back to sketch-split for large ones. It is the safest
