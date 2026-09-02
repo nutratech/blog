@@ -205,16 +205,17 @@ or **large n** where `FP × C_decode_one > C_build(n) + n × C_enumerate`.
 
 ## Break-even formula
 
-Sketch splitting costs `R` rounds of `L + C_cpu(Δ_i)` where `Δ_i` shrinks each
-round. Both filter protocols cost `R + 1` rounds but avoid recursive splitting
-for overflow buckets.
+Sketch splitting costs `R` rounds of `L + C_wire(n) + C_decode(n)` where `R`
+grows with the initial bucket size and shrinks with the decode budget. Both
+filter protocols cost `R + 1` rounds but avoid recursive splitting for overflow
+buckets.
 
 **Membership-only filter wins when:**
 
 <!-- markdownlint-disable MD013 -->
 
 $$
-L < R \cdot C_{\text{cpu}}(\Delta_i) - \left[C_{\text{build}}(n) + C_{\text{probe}}(n) + \text{FP} \cdot C_{\text{decode one}}\right]
+L < R \cdot \left(L + C_{\text{wire}}(n) + C_{\text{decode}}(n)\right) - \left[C_{\text{build}}(n) + C_{\text{probe}}(n) + \text{FP} \cdot C_{\text{decode one}}\right]
 $$
 
 <!-- markdownlint-enable MD013 -->
@@ -224,7 +225,7 @@ $$
 <!-- markdownlint-disable MD013 -->
 
 $$
-L < R \cdot C_{\text{cpu}}(\Delta_i) - \left[2 \cdot C_{\text{build}}(n) + 2 \cdot n \cdot C_{\text{enumerate}}\right]
+L < R \cdot \left(L + C_{\text{wire}}(n) + C_{\text{decode}}(n)\right) - \left[2 \cdot C_{\text{build}}(n) + 2 \cdot n \cdot C_{\text{enumerate}}\right]
 $$
 
 <!-- markdownlint-enable MD013 -->
@@ -305,31 +306,32 @@ microbenchmark data in `filter_spillover.rs`).
 
 ### PinSketch baseline (no FPR)
 
-PinSketch is **exact** — zero false positives, zero false negatives. The cost
-model is pure wire + decode:
+PinSketch is **exact** — zero false positives, zero false negatives. But it
+requires **multiple rounds** of sketch exchange when the decode budget is
+exceeded (sketch splitting). Each round pays `L` in RTT plus wire + decode cost:
 
 $$
-C_{\text{sketch}} = L + C_{\text{decode}}(n)
+C_{\text{sketch}} = R \cdot \left(L + C_{\text{wire}}(n) + C_{\text{decode}}(n)\right)
 $$
 
-using `C_decode ≈ 0.002ms` per element (from microbenchmarks). The wire cost is
-`8 B/ε` per direction (one 64-bit coefficient per element).
+where `R` is the number of split rounds (typically 1–3 for `n ≤ 100K` with
+budget = 8M). The wire cost per round is `8 B/ε` per direction (one 64-bit
+coefficient per element), and `C_decode ≈ 0.002ms` per element.
 
 <!-- markdownlint-disable MD013 -->
 
-| n         | Wire one-way (KB) | Wire total (KB) | Decode (ms) | Total (ms) |
-| --------- | ----------------- | --------------- | ----------- | ---------- |
-| 1,000     | 7.8               | 15.6            | 0.002       | 30.002     |
-| 10,000    | 78.1              | 156.3           | 0.020       | 30.020     |
-| 100,000   | 781.3             | 1562.5          | 0.200       | 30.200     |
-| 1,000,000 | 7,812.5           | 15,625.0        | 2.000       | 32.000     |
+| n         | Wire/round (KB) | Rounds | Total wire (KB) | Decode (ms) | Total (ms) |
+| --------- | --------------- | ------ | --------------- | ----------- | ---------- |
+| 1,000     | 15.6            | 1      | 15.6            | 0.002       | 30.002     |
+| 10,000    | 156.3           | 1      | 156.3           | 0.020       | 30.020     |
+| 100,000   | 1,562.5         | 2      | 3,125.0         | 0.400       | 60.600     |
+| 1,000,000 | 15,625.0        | 3      | 46,875.0        | 6.000       | 98.000     |
 
 <!-- markdownlint-enable MD013 -->
 
-The decode cost is negligible at all set sizes — PinSketch's advantage is that
-it avoids the FP decode overhead entirely. The trade-off is that it requires
-multiple rounds when the decode budget is exceeded (sketch splitting), adding
-`R × L` in extra RTT cost. This is exactly what the filter strategies avoid.
+The decode cost is negligible at all set sizes — the dominant cost is the
+repeated RTT rounds. This is exactly what the filter strategies avoid: they pay
+one extra RTT up front but eliminate the need for recursive sketch splitting.
 
 ### Bloom filter (FPR sweep)
 
