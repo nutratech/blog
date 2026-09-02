@@ -468,6 +468,52 @@ enumeration costs ~50ms regardless of FPR — this is the price of invertibility
 For smaller n (≤ 10K), the enumerate cost drops below the RTT and GCS becomes
 competitive.
 
+### Full reconciliation comparison
+
+Head-to-head benchmark of all six strategies at FPR = 0.1%
+(`invertible_filter.rs`). Wire includes filter/sketch transfer + response. Algo
+is total CPU (build + probe or decode).
+
+<!-- markdownlint-disable MD013 -->
+
+| Strategy  | N      | Δ     | Wire (KB) | Algo (ms) | Wire B/ε |
+| --------- | ------ | ----- | --------- | --------- | -------- |
+| PinSketch | 1,000  | 100   | 0.3       | 506.7     | 1.3      |
+| GCS P=128 | 1,000  | 100   | 2.4       | 2.3       | 12.0     |
+| Bloom     | 1,000  | 100   | 10.5      | 4.9       | 52.5     |
+| Cuckoo    | 1,000  | 100   | 12.6      | 0.8       | 63.0     |
+| CQF       | 1,000  | 100   | 17.3      | 11.5      | 86.5     |
+| R-probe   | 1,000  | 100   | 14.5      | 1.7       | 72.5     |
+| PinSketch | 10,000 | 100   | 0.3       | 485.8     | 1.3      |
+| GCS P=128 | 10,000 | 100   | 19.1      | 20.9      | 95.5     |
+| Bloom     | 10,000 | 100   | 96.6      | 20.2      | 483.0    |
+| Cuckoo    | 10,000 | 100   | 110.9     | 9.3       | 554.5    |
+| CQF       | 10,000 | 100   | 148.9     | 13.2      | 744.5    |
+| R-probe   | 10,000 | 100   | 133.2     | 18.6      | 666.0    |
+| PinSketch | 10,000 | 2,500 | 0.3       | 374.4     | 0.1      |
+| GCS P=128 | 10,000 | 2,500 | 22.9      | 27.4      | 4.6      |
+| Bloom     | 10,000 | 2,500 | 119.6     | 23.1      | 23.9     |
+| Cuckoo    | 10,000 | 2,500 | 129.7     | 11.3      | 25.9     |
+| CQF       | 10,000 | 2,500 | 237.7     | 11.0      | 47.5     |
+| R-probe   | 10,000 | 2,500 | 164.8     | 16.8      | 33.0     |
+
+<!-- markdownlint-enable MD013 -->
+
+Key takeaways:
+
+- **PinSketch wins on wire** (0.3 KB regardless of N, capped at capacity 32) but
+  **decode destroys it at scale** — 486ms at N=10K, growing superlinearly.
+- **GCS is the fastest overall** — 21ms at N=10K with 19 KB wire. No decode
+  overhead, symmetric protocol, constant-time enumeration.
+- **Cuckoo is the fastest filter** — 9ms at N=10K, but pays 111 KB in wire
+  (large fingerprint + stash overhead).
+- **Bloom has the smallest filter wire** among membership-only filters (18 KB at
+  N=10K) but the response is always N×8 bytes (every element probed).
+- **CQF is the most expensive** — 72 KB filter at N=10K (quotient metadata +
+  saturated counts) plus the largest total wire.
+- **Remainder-probe is competitive on algo time** (19ms) but its 55 KB filter is
+  larger than Bloom's due to no quotient structure.
+
 ### Cross-over observations
 
 1. **PinSketch is cheapest in wire at every FPR.** Its 8 B/ε is fixed — no
