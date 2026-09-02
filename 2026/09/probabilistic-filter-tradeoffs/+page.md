@@ -30,10 +30,11 @@ no false negatives).
 
 Key formulas:
 
-```text
-bits per element:   m/n = -(ln p) / (ln 2)^2
-optimal k:          k   = (m/n) × ln 2
-```
+$$
+\frac{m}{n} = \frac{-\ln p}{(\ln 2)^2}
+\qquad
+k = \frac{m}{n} \ln 2
+$$
 
 ### Cuckoo filter
 
@@ -45,9 +46,9 @@ and XOR-ing with the current index — involutive by construction. A small stash
 The lookup checks 2 buckets × 4 slots = 8 fingerprints, so the fingerprint bits
 are:
 
-```text
-fp_bits = ceil(log2(8 / p))
-```
+$$
+f_p = \lceil \log_2(8 / p) \rceil
+$$
 
 ### Counting Quotient Filter (CQF)
 
@@ -56,9 +57,9 @@ and `shifted` bitmaps. Each slot holds a remainder and a saturated count,
 supporting deletion and multiplicity tracking. At 75% load, a lookup budgets 4
 candidate remainders per quotient run:
 
-```text
-remainder bits:  r = ceil(log2(4 / p))
-```
+$$
+r = \lceil \log_2(4 / p) \rceil
+$$
 
 ### Remainder-probe filter (baseline)
 
@@ -67,9 +68,9 @@ run-length encoding, continuation bits, and the quotient-based cluster
 structure. Included as an honest baseline to illustrate why the CQF's metadata
 matters.
 
-```text
-remainder bits:  r = ceil(log2(1 / p))
-```
+$$
+r = \lceil \log_2(1 / p) \rceil
+$$
 
 ### Golomb-coded set (BIP 158)
 
@@ -78,11 +79,11 @@ membership-only filters above, a GCS is **invertible**: the receiver can
 enumerate all stored elements from the wire bytes, enabling direct symmetric
 difference computation without a separate probe step.
 
-```text
-space:     ~P bits per element  (Golomb parameter P)
-FPR:       1/P
-wire:      Golomb-Rice encoded bitstream of sorted delta-coded hashes
-```
+$$
+\text{space} \sim P \text{ bits/element}, \quad \text{FPR} = \frac{1}{P}
+$$
+
+The wire format is a Golomb-Rice encoded bitstream of sorted delta-coded hashes.
 
 The `rezzy` benchmark (`benches/math/invertible_filter.rs`) implements this as a
 BIP 158–style set with `P ∈ {20, 128, 512}`.
@@ -92,36 +93,39 @@ BIP 158–style set with `P ∈ {20, 128, 512}`.
 The table below shows the wire cost (bytes per element) for each filter at
 `n = 100,000` elements, across four target false-positive rates. These are the
 formulas used in the `rezzy` benchmark harness (`benches/math/filters.rs`). GCS
-values use the P parameter that achieves each FPR (P = 1/p).
+values use the P parameter that achieves each FPR (P = 1/p). PinSketch
+(Minisketch) is included as the baseline — it sends one 64-bit coefficient per
+element regardless of FPR.
 
-| FPR   | Bloom    | Cuckoo    | CQF       | Remainder-probe | GCS       |
-| ----- | -------- | --------- | --------- | --------------- | --------- |
-| 0.01% | 2.40 B/ε | 10.55 B/ε | 11.80 B/ε | 8.00 B/ε        | 128.0 B/ε |
-| 0.10% | 1.80 B/ε | 8.44 B/ε  | 8.54 B/ε  | 5.00 B/ε        | 16.0 B/ε  |
-| 0.50% | 1.38 B/ε | 8.44 B/ε  | 6.57 B/ε  | 4.00 B/ε        | 3.2 B/ε   |
-| 1.00% | 1.20 B/ε | 8.44 B/ε  | 6.56 B/ε  | 3.00 B/ε        | 1.6 B/ε\* |
+<!-- markdownlint-disable MD013 -->
+
+| FPR   | Bloom    | Cuckoo    | CQF       | Remainder-probe | GCS       | PinSketch |
+| ----- | -------- | --------- | --------- | --------------- | --------- | --------- |
+| 0.01% | 2.40 B/ε | 10.55 B/ε | 11.80 B/ε | 8.00 B/ε        | 128.0 B/ε | 8.0 B/ε   |
+| 0.10% | 1.80 B/ε | 8.44 B/ε  | 8.54 B/ε  | 5.00 B/ε        | 16.0 B/ε  | 8.0 B/ε   |
+| 0.50% | 1.38 B/ε | 8.44 B/ε  | 6.57 B/ε  | 4.00 B/ε        | 3.2 B/ε   | 8.0 B/ε   |
+| 1.00% | 1.20 B/ε | 8.44 B/ε  | 6.56 B/ε  | 3.00 B/ε        | 1.6 B/ε\* | 8.0 B/ε   |
+
+<!-- markdownlint-enable MD013 -->
 
 \* GCS at 1% FPR uses P = 100, which falls between the benchmark's P = 20 and P
 = 128 points; value is interpolated.
 
 **Derivations:**
 
-```text
-Bloom:    m/n / 8
-          (bits → bytes)
+<!-- markdownlint-disable MD013 -->
 
-Cuckoo:   (n / 0.955) × (4 × ceil(log2(8/p)) / 8) + 16/n
-          (4 slots × fp_bytes + stash)
+$$
+\begin{aligned}
+\text{Bloom:} \quad & \frac{m/n}{8} \quad \text{(bits} \to \text{bytes)} \\[6pt]
+\text{Cuckoo:} \quad & \frac{n}{0.955} \times \frac{4 \lceil \log_2(8/p) \rceil}{8} + \frac{16}{n} \\[6pt]
+\text{CQF:} \quad & \frac{n}{0.75} \times \left(2 + 2 + \frac{\lceil \log_2(4/p) \rceil}{8} + \frac{3}{8}\right) \\[6pt]
+\text{R-probe:} \quad & (n \times 1.1) \times \left(\frac{\lceil \log_2(1/p) \rceil}{8} + \frac{1}{n}\right) \\[6pt]
+\text{GCS:} \quad & \frac{P}{8} \quad \text{(Golomb-Rice, } {\sim}P \text{ bits/elem)}
+\end{aligned}
+$$
 
-CQF:      (n / 0.75) × (2 + 2 + ceil(log2(4/p))/8 + 3/8)
-          (rem + count + bitmap overhead)
-
-R-probe:  (n × 1.1) × (ceil(log2(1/p))/8 + 1/n)
-          (rem + occupied flag)
-
-GCS:      P / 8
-          (Golomb-Rice, ~P bits/elem)
-```
+<!-- markdownlint-enable MD013 -->
 
 Bloom dominates on space at every FPR. Cuckoo pays a fixed 8.44 B/ε once the
 fingerprint floor of 13 bits kicks in (at p ≤ 0.1%). CQF is competitive with
@@ -174,19 +178,25 @@ This is a **symmetric** protocol — both sides do the same work. The wire cost 
 `2 × wire_bytes(GCS)` (both directions), but there is no probe step and no
 false-positive decode overhead. The cost model is:
 
-```text
-C_gcs = L + 2 × C_build(n) + 2 × n × C_enumerate
-```
+$$
+C_{\text{gcs}} = L + 2 \cdot C_{\text{build}}(n) + 2 \cdot n \cdot C_{\text{enumerate}}
+$$
 
 where `C_enumerate` is the per-element cost of decoding the Golomb-Rice
 bitstream (typically 0.1–1 µs).
 
 ### Cost comparison
 
-```text
-C_membership = L + C_build(n) + C_probe(n) + FP × C_decode_one
-C_invertible = L + 2 × C_build(n) + 2 × n × C_enumerate
-```
+<!-- markdownlint-disable MD013 -->
+
+$$
+\begin{aligned}
+C_{\text{membership}} &= L + C_{\text{build}}(n) + C_{\text{probe}}(n) + \text{FP} \cdot C_{\text{decode one}} \\
+C_{\text{invertible}} &= L + 2 \cdot C_{\text{build}}(n) + 2 \cdot n \cdot C_{\text{enumerate}}
+\end{aligned}
+$$
+
+<!-- markdownlint-enable MD013 -->
 
 The invertible path eliminates false-positive decode overhead but pays double
 the build cost and transmits the filter in both directions. It wins when the
@@ -201,15 +211,23 @@ for overflow buckets.
 
 **Membership-only filter wins when:**
 
-```text
-L < [R × C_cpu(Δ_i)] - [C_build(n) + C_probe(n) + FP × C_decode_one]
-```
+<!-- markdownlint-disable MD013 -->
+
+$$
+L < R \cdot C_{\text{cpu}}(\Delta_i) - \left[C_{\text{build}}(n) + C_{\text{probe}}(n) + \text{FP} \cdot C_{\text{decode one}}\right]
+$$
+
+<!-- markdownlint-enable MD013 -->
 
 **Invertible filter wins when:**
 
-```text
-L < [R × C_cpu(Δ_i)] - [2 × C_build(n) + 2 × n × C_enumerate]
-```
+<!-- markdownlint-disable MD013 -->
+
+$$
+L < R \cdot C_{\text{cpu}}(\Delta_i) - \left[2 \cdot C_{\text{build}}(n) + 2 \cdot n \cdot C_{\text{enumerate}}\right]
+$$
+
+<!-- markdownlint-enable MD013 -->
 
 In practice, the break-even is dominated by two terms:
 
@@ -225,12 +243,14 @@ budget is tight (no PinSketch decode needed at all).
 
 The `rezzy` benchmark suite (`cross_over_summary()` in `filter_spillover.rs`)
 sweeps Δ ∈ {1K, 5K, 10K, 25K, 50K, 100K} at `n = 1,000,000` elements and reports
-the minimum Δ where each filter first beats sketch-split on wall time.
+the minimum Δ where each filter first beats sketch-split on wall time. The
+sketch baseline at Δ = 100K (fastest case, fewest rounds) is shown for
+reference.
 
 <!-- markdownlint-disable MD013 -->
 
 ```text
-  latency   budget   cuckoo Δ   remainder Δ     cqf Δ    bloom Δ   hybrid Δ
+  latency   budget      cuckoo Δ   remainder Δ       cqf Δ      bloom Δ     hybrid Δ
   ------- ---------- ------------ ------------ ------------ ------------ ------------
       0ms    1000000        never        never        never        never        never
       0ms    4000000        never        never        never        never        never
@@ -272,12 +292,44 @@ Sweeping the false-positive rate from 0.01% to 1% at `n = 100,000` and
 `L = 30ms` network latency. The "total cost" column is the modeled wall time for
 one overflow bucket group:
 
-```text
-C_total = L + C_build + C_probe + (p × n) × C_decode_one
-```
+<!-- markdownlint-disable MD013 -->
+
+$$
+C_{\text{total}} = L + C_{\text{build}} + C_{\text{probe}} + (p \times n) \times C_{\text{decode one}}
+$$
+
+<!-- markdownlint-enable MD013 -->
 
 using `C_build ≈ 0.05ms`, `C_probe ≈ 0.02ms`, and `C_decode_one ≈ 5µs` (from the
 microbenchmark data in `filter_spillover.rs`).
+
+### PinSketch baseline (no FPR)
+
+PinSketch is **exact** — zero false positives, zero false negatives. The cost
+model is pure wire + decode:
+
+$$
+C_{\text{sketch}} = L + C_{\text{decode}}(n)
+$$
+
+using `C_decode ≈ 0.002ms` per element (from microbenchmarks). The wire cost is
+`8 B/ε` per direction (one 64-bit coefficient per element).
+
+<!-- markdownlint-disable MD013 -->
+
+| n         | Wire one-way (KB) | Wire total (KB) | Decode (ms) | Total (ms) |
+| --------- | ----------------- | --------------- | ----------- | ---------- |
+| 1,000     | 7.8               | 15.6            | 0.002       | 30.002     |
+| 10,000    | 78.1              | 156.3           | 0.020       | 30.020     |
+| 100,000   | 781.3             | 1562.5          | 0.200       | 30.200     |
+| 1,000,000 | 7,812.5           | 15,625.0        | 2.000       | 32.000     |
+
+<!-- markdownlint-enable MD013 -->
+
+The decode cost is negligible at all set sizes — PinSketch's advantage is that
+it avoids the FP decode overhead entirely. The trade-off is that it requires
+multiple rounds when the decode budget is exceeded (sketch splitting), adding
+`R × L` in extra RTT cost. This is exactly what the filter strategies avoid.
 
 ### Bloom filter (FPR sweep)
 
@@ -350,9 +402,9 @@ low FPR and cache-unfriendly linear probing.
 The GCS uses a different cost model — both sides exchange the filter, enumerate
 locally, and compute the symmetric difference without a PinSketch decode step:
 
-```text
-C_total = L + 2 × C_build(n) + 2 × n × C_enumerate
-```
+$$
+C_{\text{total}} = L + 2 \cdot C_{\text{build}}(n) + 2 \cdot n \cdot C_{\text{enumerate}}
+$$
 
 using `C_build ≈ 0.08ms` (sort + Golomb-Rice encode) and `C_enumerate ≈ 0.5µs`
 (sorted binary search per element).
@@ -378,43 +430,47 @@ competitive.
 
 ### Cross-over observations
 
-1. **Bloom is the cheapest membership-only filter at every FPR.** Its
+1. **PinSketch is cheapest in wire at every FPR.** Its 8 B/ε is fixed — no
+   false-positive trade-off. The cost is paid in extra RTT rounds when the
+   decode budget is exceeded.
+
+2. **Bloom is the cheapest membership-only filter at every FPR.** Its
    space-optimal design means the smallest wire transfer, and at p ≤ 0.1% the
    false-positive decode overhead is negligible (< 0.5ms).
 
-2. **Cuckoo's wire cost is flat for p ≤ 0.1%.** The 13-bit fingerprint floor
+3. **Cuckoo's wire cost is flat for p ≤ 0.1%.** The 13-bit fingerprint floor
    means there is no benefit to relaxing FPR below 0.1% — you pay 8.44 B/ε
    regardless.
 
-3. **CQF gains the most from relaxing FPR.** Dropping from 0.01% to 1% cuts wire
+4. **CQF gains the most from relaxing FPR.** Dropping from 0.01% to 1% cuts wire
    by 44% (1152 KB → 640 KB), because the remainder width shrinks from 16 to 8
    bits.
 
-4. **The remainder-probe baseline is cheapest in total cost at every FPR**
+5. **The remainder-probe baseline is cheapest in total cost at every FPR**
    because it has zero false positives. But this is misleading — its linear
    probe structure makes `C_build` and `C_probe` pessimistic for large n, and it
    cannot support deletion.
 
-5. **At 30ms latency, all membership-only filters add < 1ms overhead at p ≤
+6. **At 30ms latency, all membership-only filters add < 1ms overhead at p ≤
    0.1%.** The network RTT dominates. Filter choice matters far less than the
    decision of whether to use filters at all.
 
-6. **GCS is dominated by enumerate cost, not network latency.** At `n = 100K`,
+7. **GCS is dominated by enumerate cost, not network latency.** At `n = 100K`,
    the ~50ms enumerate step makes GCS uncompetitive for large sets. It becomes
    interesting at small n (≤ 10K) where enumeration is fast and the symmetric
    protocol avoids the PinSketch decode entirely.
 
 ## Decision table
 
-| Scenario                                       | Winner       |
-| ---------------------------------------------- | ------------ |
-| Low latency (≤ 5ms), any Δ                     | Sketch split |
-| High latency (≥ 20ms), Δ < 5K                  | Sketch split |
-| High latency, Δ > 25K, insert-only             | Cuckoo       |
-| High latency, Δ > 25K, need counting/deletion  | CQF          |
-| High latency, Δ > 25K, simplest implementation | Bloom        |
-| Small n (≤ 10K), need full set recovery        | GCS          |
-| Unknown workload / mixed                       | Hybrid       |
+| Scenario                                       | Winner    |
+| ---------------------------------------------- | --------- |
+| Low latency (≤ 5ms), any Δ                     | PinSketch |
+| High latency (≥ 20ms), Δ < 5K                  | PinSketch |
+| High latency, Δ > 25K, insert-only             | Cuckoo    |
+| High latency, Δ > 25K, need counting/deletion  | CQF       |
+| High latency, Δ > 25K, simplest implementation | Bloom     |
+| Small n (≤ 10K), need full set recovery        | GCS       |
+| Unknown workload / mixed                       | Hybrid    |
 
 The **hybrid** strategy uses a filter for small overflow buckets (≤ 2× decode
 capacity) and falls back to sketch-split for large ones. It is the safest
@@ -422,7 +478,8 @@ default when the overflow distribution is unpredictable.
 
 ## Reproducibility
 
-All benchmarks live in the `rezzy` repository. To run the full sweep:
+All benchmarks live in the `rezzy` repository. Results in this post were
+generated at commit `02e8d8d`. To run the full sweep:
 
 ```bash
 cd /path/to/rezzy
