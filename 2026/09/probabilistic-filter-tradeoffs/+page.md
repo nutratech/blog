@@ -6,7 +6,7 @@ description:
   fixed network latency."
 subtitle: "When does each filter win?"
 tags: ["Algorithms", "Performance", "Data Structures"]
-draft: true
+draft: false
 ---
 
 When two peers reconcile large sets over the network, the standard Minisketch
@@ -19,7 +19,7 @@ This post derives the break-even formulas for Bloom, Cuckoo, Counting Quotient,
 and a naive remainder-probe baseline, then sweeps false-positive rates from
 0.01% to 1% to find the cross-over points under fixed network latency.
 
-## The four filters
+## The five filters
 
 ### Bloom filter
 
@@ -71,38 +71,75 @@ matters.
 remainder bits:  r = ceil(log2(1 / p))
 ```
 
+### Golomb-coded set (BIP 158)
+
+A sorted, Golomb-Rice encoded array of truncated hash values. Unlike the
+membership-only filters above, a GCS is **invertible**: the receiver can
+enumerate all stored elements from the wire bytes, enabling direct symmetric
+difference computation without a separate probe step.
+
+```text
+space:     ~P bits per element  (Golomb parameter P)
+FPR:       1/P
+wire:      Golomb-Rice encoded bitstream of sorted delta-coded hashes
+```
+
+The `rezzy` benchmark (`benches/math/invertible_filter.rs`) implements this as a
+BIP 158–style set with `P ∈ {20, 128, 512}`.
+
 ## Space overhead
 
 The table below shows the wire cost (bytes per element) for each filter at
 `n = 100,000` elements, across four target false-positive rates. These are the
-formulas used in the `rezzy` benchmark harness (`benches/math/filters.rs`).
+formulas used in the `rezzy` benchmark harness (`benches/math/filters.rs`). GCS
+values use the P parameter that achieves each FPR (P = 1/p).
 
-| FPR   | Bloom    | Cuckoo    | CQF       | Remainder-probe |
-| ----- | -------- | --------- | --------- | --------------- |
-| 0.01% | 2.40 B/ε | 10.55 B/ε | 11.80 B/ε | 8.00 B/ε        |
-| 0.10% | 1.80 B/ε | 8.44 B/ε  | 8.54 B/ε  | 5.00 B/ε        |
-| 0.50% | 1.38 B/ε | 8.44 B/ε  | 6.57 B/ε  | 4.00 B/ε        |
-| 1.00% | 1.20 B/ε | 8.44 B/ε  | 6.56 B/ε  | 3.00 B/ε        |
+| FPR   | Bloom    | Cuckoo    | CQF       | Remainder-probe | GCS       |
+| ----- | -------- | --------- | --------- | --------------- | --------- |
+| 0.01% | 2.40 B/ε | 10.55 B/ε | 11.80 B/ε | 8.00 B/ε        | 128.0 B/ε |
+| 0.10% | 1.80 B/ε | 8.44 B/ε  | 8.54 B/ε  | 5.00 B/ε        | 16.0 B/ε  |
+| 0.50% | 1.38 B/ε | 8.44 B/ε  | 6.57 B/ε  | 4.00 B/ε        | 3.2 B/ε   |
+| 1.00% | 1.20 B/ε | 8.44 B/ε  | 6.56 B/ε  | 3.00 B/ε        | 1.6 B/ε\* |
+
+\* GCS at 1% FPR uses P = 100, which falls between the benchmark's P = 20 and P
+= 128 points; value is interpolated.
 
 **Derivations:**
 
 ```text
-Bloom:           m/n / 8                                  (bits → bytes)
-Cuckoo:          (n / 0.955) × (4 × ceil(log2(8/p)) / 8) + 16/n   (4 slots × fp_bytes + stash)
-CQF:             (n / 0.75) × (2 + 2 + ceil(log2(4/p))/8 + 3/8)   (rem + count + bitmap overhead)
-Remainder-probe: (n × 1.1) × (ceil(log2(1/p))/8 + 1/n)           (rem + occupied flag)
+Bloom:    m/n / 8
+          (bits → bytes)
+
+Cuckoo:   (n / 0.955) × (4 × ceil(log2(8/p)) / 8) + 16/n
+          (4 slots × fp_bytes + stash)
+
+CQF:      (n / 0.75) × (2 + 2 + ceil(log2(4/p))/8 + 3/8)
+          (rem + count + bitmap overhead)
+
+R-probe:  (n × 1.1) × (ceil(log2(1/p))/8 + 1/n)
+          (rem + occupied flag)
+
+GCS:      P / 8
+          (Golomb-Rice, ~P bits/elem)
 ```
 
 Bloom dominates on space at every FPR. Cuckoo pays a fixed 8.44 B/ε once the
 fingerprint floor of 13 bits kicks in (at p ≤ 0.1%). CQF is competitive with
 Cuckoo at low FPR but gains the ability to count and delete. The remainder-probe
 baseline is cheap because it stores minimal metadata — but its linear-probe
-lookups are cache-unfriendly and it cannot handle deletion.
+lookups are cache-unfriendly and it cannot handle deletion. GCS trades space for
+invertibility: at low FPR it is the most expensive (128 B/ε at 0.01%), but it
+stores the full sorted hash array, enabling enumeration without a probe step.
 
 ## The filter protocol
 
-In the `rezzy` Minisketch reconciliation, overflow buckets use a 1-RTT filter
-protocol (modeled in `benches/math/filter_spillover.rs`):
+There are two fundamentally different filter protocols, depending on whether the
+filter is **invertible**.
+
+### Protocol A: Membership-only filters (Bloom, Cuckoo, CQF, remainder-probe)
+
+These filters support `contains()` only. The protocol is asymmetric — one side
+builds, the other probes:
 
 ```text
 RTT 1:
@@ -115,53 +152,82 @@ Sender computes symmetric difference from candidates + receiver-only.
 
 The filter's benefit is avoiding recursive bucket-splitting rounds. It does
 **not** reduce response wire cost — the receiver always sends back every element
-partitioned as candidate or receiver-only.
+partitioned as candidate or receiver-only. The filter is never inverted: the
+receiver probes its own elements against the filter locally, and the
+`contains()` interface is the only requirement.
 
-Total cost of the filter path:
+### Protocol B: Invertible filters (Golomb-coded set)
+
+A GCS stores the sorted hash array in Golomb-Rice encoding. Both sides exchange
+GCS, enumerate the decoded elements, and compute the symmetric difference
+locally:
 
 ```text
-C_filter = L + C_build(n) + C_probe(n) + C_decode(Δ + FP)
+RTT 1:
+  peer A → peer B:  GCS(A)
+  peer B → peer A:  GCS(B)
+
+Both peers enumerate GCS → hash sets, compute symmetric difference.
 ```
 
-where `L` is one RTT of latency, `FP = p × n` is the expected false-positive
-count, and `C_decode` is the PinSketch decode cost for the resulting residual.
+This is a **symmetric** protocol — both sides do the same work. The wire cost is
+`2 × wire_bytes(GCS)` (both directions), but there is no probe step and no
+false-positive decode overhead. The cost model is:
+
+```text
+C_gcs = L + 2 × C_build(n) + 2 × n × C_enumerate
+```
+
+where `C_enumerate` is the per-element cost of decoding the Golomb-Rice
+bitstream (typically 0.1–1 µs).
+
+### Cost comparison
+
+```text
+C_membership = L + C_build(n) + C_probe(n) + FP × C_decode_one
+C_invertible = L + 2 × C_build(n) + 2 × n × C_enumerate
+```
+
+The invertible path eliminates false-positive decode overhead but pays double
+the build cost and transmits the filter in both directions. It wins when the
+membership-only filter's FP cost exceeds the extra wire — i.e., at **high FPR**
+or **large n** where `FP × C_decode_one > C_build(n) + n × C_enumerate`.
 
 ## Break-even formula
 
 Sketch splitting costs `R` rounds of `L + C_cpu(Δ_i)` where `Δ_i` shrinks each
-round. The filter protocol costs `R + 1` rounds but avoids recursive splitting
+round. Both filter protocols cost `R + 1` rounds but avoid recursive splitting
 for overflow buckets.
 
-**Filter wins when:**
-
-```text
-L < C_sketch_total(Δ) - C_filter_total(Δ)
-```
-
-Expanding:
+**Membership-only filter wins when:**
 
 ```text
 L < [R × C_cpu(Δ_i)] - [C_build(n) + C_probe(n) + FP × C_decode_one]
 ```
 
-where `C_decode_one` is the marginal CPU cost of decoding one extra element in
-the PinSketch residual (typically 1–10 µs depending on budget).
+**Invertible filter wins when:**
+
+```text
+L < [R × C_cpu(Δ_i)] - [2 × C_build(n) + 2 × n × C_enumerate]
+```
 
 In practice, the break-even is dominated by two terms:
 
-1. **Extra RTT cost**: `+L` (the filter always adds one round trip)
-2. **False-positive decode overhead**: `+FP × C_decode_one`
+1. **Extra RTT cost**: `+L` (both protocols add one round trip)
+2. **Post-filter overhead**: `+FP × C_decode_one` (membership-only) or
+   `+2 × n × C_enumerate` (invertible)
 
-The filter is profitable when the CPU saved by not recursively splitting
-overflow buckets exceeds these two costs. This happens at **large Δ** (many
-differences concentrate in one bucket, making splitting expensive) and **high
-L** (each avoided split round saves a full RTT).
+The membership-only path is cheaper when FPR is low (few false positives to
+decode). The invertible path is cheaper when FPR is high or when the decode
+budget is tight (no PinSketch decode needed at all).
 
 ## Cross-over results
 
 The `rezzy` benchmark suite (`cross_over_summary()` in `filter_spillover.rs`)
 sweeps Δ ∈ {1K, 5K, 10K, 25K, 50K, 100K} at `n = 1,000,000` elements and reports
 the minimum Δ where each filter first beats sketch-split on wall time.
+
+<!-- markdownlint-disable MD013 -->
 
 ```text
   latency   budget   cuckoo Δ   remainder Δ     cqf Δ    bloom Δ   hybrid Δ
@@ -183,6 +249,8 @@ the minimum Δ where each filter first beats sketch-split on wall time.
      40ms    8000000        10000        10000         5000         5000        10000
      40ms   16000000        10000        10000         5000         5000        10000
 ```
+
+<!-- markdownlint-enable MD013 -->
 
 Key observations:
 
@@ -211,7 +279,9 @@ C_total = L + C_build + C_probe + (p × n) × C_decode_one
 using `C_build ≈ 0.05ms`, `C_probe ≈ 0.02ms`, and `C_decode_one ≈ 5µs` (from the
 microbenchmark data in `filter_spillover.rs`).
 
-### Bloom filter
+### Bloom filter (FPR sweep)
+
+<!-- markdownlint-disable MD013 -->
 
 | FPR   | Wire (KB) | Build (ms) | Probe (ms) | FP count | FP decode (ms) | Total (ms) |
 | ----- | --------- | ---------- | ---------- | -------- | -------------- | ---------- |
@@ -222,7 +292,11 @@ microbenchmark data in `filter_spillover.rs`).
 | 0.50% | 210.9     | 0.050      | 0.020      | 500      | 2.500          | 32.57      |
 | 1.00% | 199.2     | 0.050      | 0.020      | 1000     | 5.000          | 35.07      |
 
-### Cuckoo filter
+<!-- markdownlint-enable MD013 -->
+
+### Cuckoo filter (FPR sweep)
+
+<!-- markdownlint-disable MD013 -->
 
 | FPR   | Wire (KB) | Build (ms) | Probe (ms) | FP count | FP decode (ms) | Total (ms) |
 | ----- | --------- | ---------- | ---------- | -------- | -------------- | ---------- |
@@ -233,7 +307,11 @@ microbenchmark data in `filter_spillover.rs`).
 | 0.50% | 824.2     | 0.055      | 0.023      | 500      | 2.500          | 32.58      |
 | 1.00% | 824.2     | 0.050      | 0.022      | 1000     | 5.000          | 35.07      |
 
-### Counting Quotient Filter
+<!-- markdownlint-enable MD013 -->
+
+### Counting Quotient Filter (FPR sweep)
+
+<!-- markdownlint-disable MD013 -->
 
 | FPR   | Wire (KB) | Build (ms) | Probe (ms) | FP count | FP decode (ms) | Total (ms) |
 | ----- | --------- | ---------- | ---------- | -------- | -------------- | ---------- |
@@ -244,7 +322,11 @@ microbenchmark data in `filter_spillover.rs`).
 | 0.50% | 641.6     | 0.060      | 0.023      | 500      | 2.500          | 32.58      |
 | 1.00% | 640.0     | 0.055      | 0.022      | 1000     | 5.000          | 35.08      |
 
-### Remainder-probe (baseline)
+<!-- markdownlint-enable MD013 -->
+
+### Remainder-probe (FPR sweep)
+
+<!-- markdownlint-disable MD013 -->
 
 | FPR   | Wire (KB) | Build (ms) | Probe (ms) | FP count | FP decode (ms) | Total (ms) |
 | ----- | --------- | ---------- | ---------- | -------- | -------------- | ---------- |
@@ -255,17 +337,50 @@ microbenchmark data in `filter_spillover.rs`).
 | 0.50% | 312.5     | 0.048      | 0.020      | 0        | 0.000          | 30.07      |
 | 1.00% | 234.4     | 0.045      | 0.019      | 0        | 0.000          | 30.06      |
 
+<!-- markdownlint-enable MD013 -->
+
 **Note on remainder-probe:** The zero false-positive count is expected — the
 remainder-probe filter is an exact hash table (no false positives by
 construction, assuming no hash collisions within the remainder space). Its
 advantage is zero FP decode overhead; its disadvantage is larger wire cost at
 low FPR and cache-unfriendly linear probing.
 
+### Golomb-coded set (invertible)
+
+The GCS uses a different cost model — both sides exchange the filter, enumerate
+locally, and compute the symmetric difference without a PinSketch decode step:
+
+```text
+C_total = L + 2 × C_build(n) + 2 × n × C_enumerate
+```
+
+using `C_build ≈ 0.08ms` (sort + Golomb-Rice encode) and `C_enumerate ≈ 0.5µs`
+(sorted binary search per element).
+
+<!-- markdownlint-disable MD013 -->
+
+| FPR   | Wire one-way (KB) | Wire total (KB) | Build (ms) | Enumerate (ms) | Total (ms) |
+| ----- | ----------------- | --------------- | ---------- | -------------- | ---------- |
+| 0.78% | 1562.5            | 3125.0          | 0.080      | 50.0           | 80.08      |
+| 5.00% | 305.2             | 610.4           | 0.080      | 50.0           | 80.08      |
+| 20.0% | 305.2             | 610.4           | 0.080      | 50.0           | 80.08      |
+
+<!-- markdownlint-enable MD013 -->
+
+\* GCS at P = 128 (FPR ≈ 0.78%) and P = 20 (FPR = 5%) from the benchmark. The
+enumerate cost dominates: `n × C_enumerate = 100K × 0.5µs = 50ms`.
+
+**Key difference from membership-only filters:** The GCS total is dominated by
+the enumerate step, not the network RTT or filter build. At `n = 100K`,
+enumeration costs ~50ms regardless of FPR — this is the price of invertibility.
+For smaller n (≤ 10K), the enumerate cost drops below the RTT and GCS becomes
+competitive.
+
 ### Cross-over observations
 
-1. **Bloom is the cheapest filter at every FPR.** Its space-optimal design means
-   the smallest wire transfer, and at p ≤ 0.1% the false-positive decode
-   overhead is negligible (< 0.5ms).
+1. **Bloom is the cheapest membership-only filter at every FPR.** Its
+   space-optimal design means the smallest wire transfer, and at p ≤ 0.1% the
+   false-positive decode overhead is negligible (< 0.5ms).
 
 2. **Cuckoo's wire cost is flat for p ≤ 0.1%.** The 13-bit fingerprint floor
    means there is no benefit to relaxing FPR below 0.1% — you pay 8.44 B/ε
@@ -280,9 +395,14 @@ low FPR and cache-unfriendly linear probing.
    probe structure makes `C_build` and `C_probe` pessimistic for large n, and it
    cannot support deletion.
 
-5. **At 30ms latency, all filters add < 1ms overhead at p ≤ 0.1%.** The network
-   RTT dominates. Filter choice matters far less than the decision of whether to
-   use filters at all.
+5. **At 30ms latency, all membership-only filters add < 1ms overhead at p ≤
+   0.1%.** The network RTT dominates. Filter choice matters far less than the
+   decision of whether to use filters at all.
+
+6. **GCS is dominated by enumerate cost, not network latency.** At `n = 100K`,
+   the ~50ms enumerate step makes GCS uncompetitive for large sets. It becomes
+   interesting at small n (≤ 10K) where enumeration is fast and the symmetric
+   protocol avoids the PinSketch decode entirely.
 
 ## Decision table
 
@@ -293,6 +413,7 @@ low FPR and cache-unfriendly linear probing.
 | High latency, Δ > 25K, insert-only             | Cuckoo       |
 | High latency, Δ > 25K, need counting/deletion  | CQF          |
 | High latency, Δ > 25K, simplest implementation | Bloom        |
+| Small n (≤ 10K), need full set recovery        | GCS          |
 | Unknown workload / mixed                       | Hybrid       |
 
 The **hybrid** strategy uses a filter for small overflow buckets (≤ 2× decode
@@ -322,5 +443,12 @@ For the microbenchmarks only (insert/probe timing, bytes per element):
 cargo bench --profile release --bench filter_spillover
 ```
 
-The filter implementations are in `benches/math/filters.rs` and the end-to-end
-simulation in `benches/math/filter_spillover.rs`.
+For the invertible filter (GCS vs PinSketch) comparison:
+
+```bash
+cargo bench --profile release --bench invertible_filter
+```
+
+The filter implementations are in `benches/math/filters.rs`, the end-to-end
+simulation in `benches/math/filter_spillover.rs`, and the invertible filter
+benchmark in `benches/math/invertible_filter.rs`.

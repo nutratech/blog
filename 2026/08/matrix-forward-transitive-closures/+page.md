@@ -25,7 +25,7 @@ transitive closure is a mathematical trap, and how we might elegantly resolve
 the tension between memory, storage I/O, and CPU cycles using adaptive
 reachability accelerators.
 
-### The Naive Approach and the Storage Reality
+## The Naive Approach and the Storage Reality
 
 At first glance, one might assume that a homeserver is robustly protected by
 simple integer-keyed adjacency lists:
@@ -71,7 +71,7 @@ incoming event and destroying any efficiency gained during the forward sweep. We
 are forced to conclude that storing the full transitive closure is a fool's
 errand.
 
-### The Resolution: Adaptive Reachability
+## The Resolution: Adaptive Reachability
 
 If we reject both the agonizing latency of a naive disk-bound BFS and the
 prohibitive write-amplification of the full transitive closure, we must
@@ -100,7 +100,7 @@ By relying on the storage layer solely to provide a cache-local adjacency list,
 speeds, avoiding the $O(N^2)$ update penalty while preserving the strict latency
 requirements of state resolution.
 
-### Future Work: Forward Fill
+## Future Work: Forward Fill
 
 The architectural principles established here extend beyond mere local state
 resolution. A challenging and worthwhile corollary to this investigation is the
