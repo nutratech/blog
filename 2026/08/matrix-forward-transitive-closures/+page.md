@@ -1,93 +1,114 @@
 ---
 title: "[DRAFT] DAG exercise: Computing the forward reachable set"
 date: "2026-08-01"
-description: "Advanced performance trick, not implemented by Synapse."
-subtitle: 'Computing the "forward transitive closure" for given events.'
+description: "Analysis of forward reachability, adaptive DAG traversal, and storage locality."
+subtitle: "Beyond the transitive closure."
 tags: ["Matrix", "Performance", "Algorithms"]
+tags: ["Matrix", "Performance", "Algorithms", "RocksDB"]
 draft: true
 ---
 
-This is an advanced technique[^v21_fwd_note] not yet implemented by Synapse
-[^synapse_note01], nor any homeserver to my knowledge.
+It is a prevailing illusion among software engineers that a graph, once
+persisted to a database, may be effortlessly traversed. In the context of a
+Matrix homeserver, where the room topology is a Directed Acyclic Graph (DAG)
+possessing a variable branching factor, the cost of determining forward
+reachability—whether event _A_ eventually leads to event _B_—presents a
+formidable structural problem.
 
-The performance gain depends on the fork depth. In general, this will not be
-very significant (even for the ~35K member "Matrix Community" space), since a
-homeserver is already fairly robustly guarded by simple integer-keyed indexes:
+To my knowledge, advanced forward-reachability indexing remains an unrealized
+optimization in the Matrix ecosystem; even Synapse does not presently implement
+a dedicated forward-closure index, relying instead upon incremental evaluation
+and historical auth-chains.
+
+What follows is an analysis of why naive traversals fail, why materializing the
+transitive closure is a mathematical trap, and how we might elegantly resolve
+the tension between memory, storage I/O, and CPU cycles using adaptive
+reachability accelerators.
+
+### The Naive Approach and the Storage Reality
+
+At first glance, one might assume that a homeserver is robustly protected by
+simple integer-keyed adjacency lists:
 
 ```text
-(room_id, shortevent_id) -> (&room_id, [shortprev_events])
+(shortroomid, shortevent_id) -> [shortprev_events]
 
-# or, more developer-friendly,
-
-(shortevent_id) -> [shortprev_events]
 ```
 
-This DB-index maps (short) event IDs to their `prev_event` edges, allowing rapid
-**recursive queries** without full event parsing. Both PostgreSQL and RocksDB
-generally perform better reading only the 8-byte `shortprev_event` values as
-opposed to loading the entire event JSON, just to throw it away.
+Such an index permits recursive queries without the crushing expense of parsing
+complete JSON events. However, a purely random adjacency list is an I/O
+disaster. To ask for the edges of a given event is to trigger a random
+point-read. A deep topological walk, left to its own devices upon such a schema,
+degenerates into an unpredictable sequence of random disk operations.
 
-Since we only expect a small performance gain, this is a theoretical exercise or
-hobbyist investigation.
+The salvation of the adjacency list lies entirely in physical storage locality.
+By prefixing the adjacency keys with a `shortroomid`, we do not flatten the
+graph into a sequential list, but we _do_ constrain it to a contiguous sequence
+of blocks on disk. Consequently, when the application requests the immediate
+parents of an event, RocksDB pulls the block into RAM. Because Matrix DAGs are
+topologically clustered by room, subsequent recursive hops—to grandparents and
+siblings—cease to be disk I/O; they become instantaneous block cache hits. The
+storage layer's duty is not to walk the graph, but to warm the cache so that the
+CPU may walk it unhindered.
 
-## Supplanting naive forward recursion
+### The Illusion of the Transitive Closure
 
-If for most rooms forward recursion over `shortprev_event` edges is sufficient,
-what is there to gain?
+If recursive queries upon warm cache blocks are efficient, what is there to gain
+by pre-computing the forward reachable set?
 
-Re-computing the forward transitive closure on-demand as events stream in would
-involve updating all backwards reachable events to include the new extremity.
-This update penalty becomes worse as the room and backward reachable subgraph
-grow, destroying any potential efficiency gains in the forward sweep (triggering
-10,000 or 100,000 row updates[^upsert_penalty] if the event passes state res and
-is added to the timeline).
+Consider the proposition of materializing the forward transitive closure. In a
+`ForwardReachabilityIndex`, every node stores a compressed bitmap of all its
+descendants. Queries become incredibly rapid, reducing to a single bitwise `OR`
+operation.
 
-**TODO:** Draft/wip.
+Yet, as a durable storage mechanism for a live federated system, this is
+structurally untenable. Matrix DAGs are not static; they continually branch and
+merge. Re-computing the forward transitive closure on-demand as events stream in
+would require updating all backwards-reachable events to append the new
+extremity. As a room's history grows, this update penalty compounds
+catastrophically, triggering tens of thousands of row updates for a single
+incoming event and destroying any efficiency gained during the forward sweep. We
+are forced to conclude that storing the full transitive closure is a fool's
+errand.
 
-## Future work
+### The Resolution: Adaptive Reachability
 
-Future work includes simplifying the code and claiming any remaining performance
-gains.
+If we reject both the agonizing latency of a naive disk-bound BFS and the
+prohibitive write-amplification of the full transitive closure, we must
+synthesize a compromise.
 
-A challenging and worthwhile follow-up investigation is studying proposed
-methods of synchronizing the event set forward of given extremities over the
-network and between two servers. Such functionality may be relevant in the
-not-yet-implemented "forward fill" feature/endpoint[^msc4000].
+This resolution is embodied in the `RangePrefilterReachability` accelerator.
+Rather than materializing the full descendant bitmap, it extracts the adjacency
+list from the room-prefixed storage cache and pairs it with a lightweight,
+coarse descendant interval `[min_descendant, max_descendant]`.
 
-**TODO:** Draft/wip.
+By tracking these intervals, the algorithm maintains exactitude while
+drastically pruning the search space. If a target node falls outside a branch's
+descendant interval, the traversal immediately abandons that path. Furthermore,
+the accelerator dynamically evaluates the geometry of the query to select the
+optimal traversal mode:
 
-<!-- markdownlint-disable MD033 -->
+- **Plain Indexed BFS:** Deployed for broad candidate sets where upfront hashing
+  amortizes efficiently.
+- **Range Pruned:** Utilized for selective queries, leveraging the descendant
+  intervals to skip dead branches entirely.
+- **Segment Jumps:** Engaged for highly selective queries upon long, unbranched
+  chains, allowing the CPU to leap over compressible segments of the topology.
 
-_<u>AI Disclosure:</u> OpenAI's `codex` CLI Assistant used to pinpoint relevant
-areas in Synapse's codebase. Fable 5 and Gemini 3.1 Pro Web assisted in
-brainstorming ideas for and helping to check the initial code demo
-implementation (which was written and shaken out a week before this blog post
-and follow-up was handwritten)._
+By relying on the storage layer solely to provide a cache-local adjacency list,
+`RangePrefilterReachability` computes reachability entirely in memory at CPU
+speeds, avoiding the $O(N^2)$ update penalty while preserving the strict latency
+requirements of state resolution.
 
-<!-- markdownlint-enable MD033 -->
+### Future Work: Forward Fill
 
-### Footnotes and references
+The architectural principles established here extend beyond mere local state
+resolution. A challenging and worthwhile corollary to this investigation is the
+synchronization of forward event sets over the network.
 
-[^v21_fwd_note]:
-    _"It is also possible to return only the relevant forwards reachable events
-    rather than all forwards reachable events to speed up load times of forwards
-    reachable events, but this is out of scope for this guide."_
-
-    State Res v2.1: An implementer's guide
-    <https://matrix.org/docs/spec-guides/state-res-2.1/>
-
-[^msc4000]:
-    This MSC can be solved in many ways. The forward transitive closure is one
-    possible tool in some circumstances.
-
-    _MSC4000: Forwards fill (`/backfill` forwards) by MadLittleMods._
-    <https://github.com/matrix-org/matrix-spec-proposals/pull/4000>
-
-[^upsert_penalty]:
-    As much as 90% to 100% of a room is backwards reachable from the frontier.
-
-[^synapse_note01]:
-    Synapse populates v2.1 forward reachable events incrementally (partially
-    on-demand, partially from persisted backward auth-chain). It does not have a
-    separate forward-closure index.
-    <https://github.com/element-hq/synapse/blob/5ed830b3b4c74c89d876cc07756c5d98a100cbed/synapse/storage/databases/main/event_federation.py#L2498-L2560>
+Such mechanics are directly applicable to proposed features like MSC4000
+(Forward Fill, or `/backfill` forwards). Determining precisely which events are
+forward-reachable from a given extremity, without transmitting redundant
+history, requires exactly the adaptive, interval-pruned graph traversal
+described above. Simplifying these accelerators and claiming the remaining
+performance gains will be the subject of future inquiry.

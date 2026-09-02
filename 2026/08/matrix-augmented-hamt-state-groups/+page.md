@@ -8,7 +8,6 @@ description:
 subtitle:
   "State of the art proposal for faster state progression and point reads."
 tags: ["Matrix", "Proposals", "Algorithms"]
-draft: true
 ---
 
 Every Matrix homeserver has to answer the same question, constantly: "what was
