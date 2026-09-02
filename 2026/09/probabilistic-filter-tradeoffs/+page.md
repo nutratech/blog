@@ -30,6 +30,8 @@ no false negatives).
 
 Key formulas:
 
+<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+
 $$
 \frac{m}{n} = \frac{-\ln p}{(\ln 2)^2}
 \qquad
@@ -46,6 +48,8 @@ and XOR-ing with the current index — involutive by construction. A small stash
 The lookup checks 2 buckets × 4 slots = 8 fingerprints, so the fingerprint bits
 are:
 
+<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+
 $$
 f_p = \lceil \log_2(8 / p) \rceil
 $$
@@ -56,6 +60,8 @@ A quotient filter with explicit run-length metadata: `occupied`, `continuation`,
 and `shifted` bitmaps. Each slot holds a remainder and a saturated count,
 supporting deletion and multiplicity tracking. At 75% load, a lookup budgets 4
 candidate remainders per quotient run:
+
+<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 
 $$
 r = \lceil \log_2(4 / p) \rceil
@@ -68,6 +74,8 @@ run-length encoding, continuation bits, and the quotient-based cluster
 structure. Included as an honest baseline to illustrate why the CQF's metadata
 matters.
 
+<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+
 $$
 r = \lceil \log_2(1 / p) \rceil
 $$
@@ -78,6 +86,8 @@ A sorted, Golomb-Rice encoded array of truncated hash values. Unlike the
 membership-only filters above, a GCS is **invertible**: the receiver can
 enumerate all stored elements from the wire bytes, enabling direct symmetric
 difference computation without a separate probe step.
+
+<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 
 $$
 \text{space} \sim P \text{ bits/element}, \quad \text{FPR} = \frac{1}{P}
@@ -114,6 +124,8 @@ element regardless of FPR.
 **Derivations:**
 
 <!-- markdownlint-disable MD013 -->
+
+<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 
 $$
 \begin{aligned}
@@ -178,6 +190,8 @@ This is a **symmetric** protocol — both sides do the same work. The wire cost 
 `2 × wire_bytes(GCS)` (both directions), but there is no probe step and no
 false-positive decode overhead. The cost model is:
 
+<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+
 $$
 C_{\text{gcs}} = L + 2 \cdot C_{\text{build}}(n) + 2 \cdot n \cdot C_{\text{enumerate}}
 $$
@@ -188,6 +202,8 @@ bitstream (typically 0.1–1 µs).
 ### Cost comparison
 
 <!-- markdownlint-disable MD013 -->
+
+<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 
 $$
 \begin{aligned}
@@ -214,6 +230,8 @@ buckets.
 
 <!-- markdownlint-disable MD013 -->
 
+<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+
 $$
 L < R \cdot \left(L + C_{\text{wire}}(n) + C_{\text{decode}}(n)\right) - \left[C_{\text{build}}(n) + C_{\text{probe}}(n) + \text{FP} \cdot C_{\text{decode one}}\right]
 $$
@@ -223,6 +241,8 @@ $$
 **Invertible filter wins when:**
 
 <!-- markdownlint-disable MD013 -->
+
+<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 
 $$
 L < R \cdot \left(L + C_{\text{wire}}(n) + C_{\text{decode}}(n)\right) - \left[2 \cdot C_{\text{build}}(n) + 2 \cdot n \cdot C_{\text{enumerate}}\right]
@@ -295,6 +315,8 @@ one overflow bucket group:
 
 <!-- markdownlint-disable MD013 -->
 
+<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+
 $$
 C_{\text{total}} = L + C_{\text{build}} + C_{\text{probe}} + (p \times n) \times C_{\text{decode one}}
 $$
@@ -308,29 +330,34 @@ microbenchmark data in `filter_spillover.rs`).
 
 PinSketch is **exact** — zero false positives, zero false negatives. But it
 requires **multiple rounds** of sketch exchange when the decode budget is
-exceeded (sketch splitting). Each round pays `L` in RTT plus wire + decode cost:
+exceeded (sketch splitting). Each round pays `L` in RTT plus wire + decode cost.
+The decode operation is **superlinear** — roughly O(n^1.7) — so it dominates at
+scale:
+
+<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 
 $$
-C_{\text{sketch}} = R \cdot \left(L + C_{\text{wire}}(n) + C_{\text{decode}}(n)\right)
+C_{\text{sketch}} = R \cdot L + C_{\text{decode}}(n)
 $$
 
-where `R` is the number of split rounds (typically 1–3 for `n ≤ 100K` with
-budget = 8M). The wire cost per round is `8 B/ε` per direction (one 64-bit
-coefficient per element), and `C_decode ≈ 0.002ms` per element.
+where `R` is the number of split rounds and `C_decode` is the cumulative decode
+cost across all buckets (from `extract+decode` benchmarks in
+`filter_spillover.rs`).
 
 <!-- markdownlint-disable MD013 -->
 
-| n         | Wire/round (KB) | Rounds | Total wire (KB) | Decode (ms) | Total (ms) |
-| --------- | --------------- | ------ | --------------- | ----------- | ---------- |
-| 1,000     | 15.6            | 1      | 15.6            | 0.002       | 30.002     |
-| 10,000    | 156.3           | 1      | 156.3           | 0.020       | 30.020     |
-| 100,000   | 1,562.5         | 2      | 3,125.0         | 0.400       | 60.600     |
-| 1,000,000 | 15,625.0        | 3      | 46,875.0        | 6.000       | 98.000     |
+| n         | Rounds | Total wire (KB) | Decode (ms) | Total (ms) |
+| --------- | ------ | --------------- | ----------- | ---------- |
+| 1,000     | 1      | 15.6            | 0.003       | 30.0       |
+| 10,000    | 1      | 156.3           | 3.0         | 33.0       |
+| 100,000   | 16     | 3,125.0         | 25.1        | 505.1      |
+| 1,000,000 | 128    | 46,875.0        | 198.1       | 4,038.1    |
 
 <!-- markdownlint-enable MD013 -->
 
-The decode cost is negligible at all set sizes — the dominant cost is the
-repeated RTT rounds. This is exactly what the filter strategies avoid: they pay
+The decode cost grows superlinearly (O(n^1.7)) and dominates at scale. At
+`n = 100K`, sketch splitting takes ~500ms across 16 rounds; at `n = 1M`, it
+exceeds 4 seconds. This is exactly what the filter strategies avoid: they pay
 one extra RTT up front but eliminate the need for recursive sketch splitting.
 
 ### Bloom filter (FPR sweep)
@@ -403,6 +430,8 @@ low FPR and cache-unfriendly linear probing.
 
 The GCS uses a different cost model — both sides exchange the filter, enumerate
 locally, and compute the symmetric difference without a PinSketch decode step:
+
+<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 
 $$
 C_{\text{total}} = L + 2 \cdot C_{\text{build}}(n) + 2 \cdot n \cdot C_{\text{enumerate}}
