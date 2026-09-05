@@ -1,5 +1,5 @@
 ---
-title: "mtxdb: A write-once packfile storage engine for Matrix"
+title: "[DRAFT] mtxdb: A write-once packfile storage engine for Matrix"
 date: "2026-09-05"
 description: "Making Matrix possible on spinning disks."
 ---
@@ -16,13 +16,28 @@ and append-only. Garbage collection is a background repack that rewrites only
 reachable data in traversal order. The result is a storage engine where reads
 are either O(1) point lookups or pure sequential scans.
 
+It's a from-scratch binary storage format, drawing on ideas from
+[libmdbx](https://github.com/erthink/libmdbx), LeanStore, SplinterDB, Fjall,
+Git's own packfile repack, and the PGM-index line of learned-index research —
+the last one mostly as a counterexample: PGM's learned CDF degenerates to
+exactly the flat, shift-and-mask fanout table described below once the keys are
+uniformly random hashes instead of structured integers, which is a large part of
+why mtxdb's index looks the way it does. Today it calls into `memmap2` from a
+single scoped, audited `unsafe` block (see
+[The lossy fanout index](#the-lossy-fanout-index)) and does effectively zero
+syscalls per read — mmap turns a hundred thousand point lookups into a handful
+of page faults, not a hundred thousand `pread`s. Compile times stay under a few
+seconds; there's no async runtime, no proc-macro codegen, and few dependencies.
+See [Roadmap](#roadmap) for what's designed but not yet built, including a
+head-to-head RocksDB comparison.
+
 <!-- markdownlint-disable MD013 -->
 
 [The problem](#the-problem) · [Packfile format](#packfile-format) ·
 [The lossy fanout index](#the-lossy-fanout-index) ·
 [Topological repack](#topological-repack) ·
 [The storage engine trait](#the-storage-engine-trait) ·
-[Benchmarks and trade-offs](#benchmarks-and-trade-offs)
+[Benchmarks and trade-offs](#benchmarks-and-trade-offs) · [Roadmap](#roadmap)
 
 <!-- markdownlint-enable MD013 -->
 
@@ -340,6 +355,30 @@ The sidecar would be a flat, mmap-able file of fixed-width records:
 `local_id → (prev_range, auth_range, depth)`. For 1M events at ~32 bytes plus
 edges, that is ~50MB per large room — trivially mmap-able, and graph walks
 become linear scans with zero PDU reads.
+
+## Roadmap
+
+What's implemented today: the packfile format, the lossy fanout index (open
+addressing with linear probing, described above), the `StorageEngine` trait,
+`NodeCache`, and the topological repacker with atomic swap. What follows is
+designed but not yet in the repository, roughly in the order it unlocks the next
+thing:
+
+- **A POPCOUNT-indexed HAMT/CHAMP trie.** The lossy fanout index above is a flat
+  hash table, not a trie — it has no bitmap and calls no `POPCOUNT`. The actual
+  HAMT node encoding (a `datamap`/`nodemap` bitmap pair, where descending a
+  level is one `count_ones()` instead of a linear scan) already exists as a
+  proof of concept in a sibling project and needs to be split out into its own
+  crate before mtxdb can depend on it.
+- **A standardized WAL, transactions, snapshots, backups, and (limited)
+  repair.** None of this exists in the storage engine yet. Durability today is
+  "fsync the pack, fsync the rename" — enough to make a single append
+  crash-safe, but well short of the full feature list above.
+- **Segment-queries and richer bulk queries** beyond what `get_many` already
+  offers.
+- **A head-to-head RocksDB benchmark.** Until that exists, "faster reads than
+  RocksDB" is a hypothesis the packfile-vs-B-tree argument supports, not a
+  measured number.
 
 ---
 
