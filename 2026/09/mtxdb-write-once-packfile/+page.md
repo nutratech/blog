@@ -4,7 +4,7 @@ date: "2026-09-05"
 description: "Making Matrix possible on spinning disks."
 ---
 
-Matrix homeservers store terabytes of state data. The state DAG for a busy room
+Matrix homeservers store gigabytes of room data. The event DAG for a busy room
 accumulates millions of HAMT nodes over its lifetime, most of them unreachable
 after the next state transition. Traditional B-tree storage engines treat every
 write as a mutation — read-modify-write cycles that scatter random seeks across
