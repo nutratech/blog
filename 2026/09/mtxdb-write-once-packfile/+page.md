@@ -74,8 +74,6 @@ nodes in order, the entire operation becomes a single sequential scan.
 mtxdb stores nodes in per-room packfiles. Each packfile is an append-only log of
 framed records:
 
-<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-
 ```text
 [MAGIC: "MDB1"] [version: 0x01]
 
@@ -112,8 +110,6 @@ The design choices:
 
 The `Record` struct in Rust:
 
-<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-
 ```rust
 pub struct Record {
     pub hash: [u8; 16],
@@ -129,8 +125,6 @@ node, that is 4.8% overhead.
 
 The packfile is the durable store; the index is the fast path. Each room gets a
 `LossyIndex` — a flat, power-of-two sized table of 64-bit slots:
-
-<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 
 ```text
 ┌─────────────────────────────────────────────────────────┐
@@ -148,8 +142,6 @@ chasing, no cache-line bouncing.
 
 The index uses **open addressing with linear probing**. The bucket is selected
 by masking the top bits of the 16-byte hash:
-
-<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 
 ```rust
 fn bucket(&self, hash: &[u8; 16]) -> usize {
@@ -261,8 +253,6 @@ traversals will still incur some seeks.
 mtxdb abstracts the backend behind a trait, so the packfile, index, cache, and
 repack code don't depend on a specific engine:
 
-<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-
 ```rust
 pub trait StorageEngine: Send + Sync {
     fn get(&self, room_id: &[u8; 16], id: &NodeId)
@@ -296,8 +286,6 @@ The `InMemoryStorage` implementation is a `HashMap<NodeId, NodeData>` for tests.
 
 Inspired by LeanStore, the crate defines a `NodeRef` enum that can be either
 lazy (just an ID, disk fetch needed) or resolved (data in hand):
-
-<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 
 ```rust
 pub enum NodeRef {
