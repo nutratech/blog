@@ -43,6 +43,27 @@ self-hosted Matrix servers actually run — random seeks are catastrophic. A
 single state resolution that touches 500 nodes at random offsets costs 500 × 8ms
 seek time = 4 seconds. That is not a typo.
 
+Here's why this matters: the gap between sequential and random reads is
+enormous, even on modern hardware.
+
+<!-- markdownlint-disable MD013 -->
+
+| Drive Type     | Sequential Read | Random 4K Read | Gap   |
+| -------------- | --------------- | -------------- | ----- |
+| Gen 4 NVMe SSD | ~7,000 MB/s     | ~70–80 MB/s    | ~90×  |
+| Gen 5 NVMe SSD | ~13,000 MB/s    | ~80–100 MB/s   | ~140× |
+| SATA SSD       | ~550 MB/s       | ~40–50 MB/s    | ~12×  |
+| HDD            | ~150 MB/s       | ~0.5–1 MB/s    | ~200× |
+
+<!-- markdownlint-enable MD013 -->
+
+A Gen 4 NVMe SSD advertising 7,000 MB/s on the box? When the OS is booting and
+reading thousands of small scattered files, it effectively operates at ~70–80
+MB/s — roughly 1% of its headline speed. The drive isn't broken. The task is
+random, and random performance has a completely different ceiling.
+
+([Source](https://www.oscooshop.com/blogs/blogs/ssd-sequential-vs-random-speed))
+
 The core insight is that **most of those 500 nodes are garbage**. A room with 1M
 state events has produced ~4.5M HAMT nodes (4-5 per state change), but the
 current-state closure is maybe a thousand. If you could read only the reachable
@@ -52,6 +73,8 @@ nodes in order, the entire operation becomes a single sequential scan.
 
 mtxdb stores nodes in per-room packfiles. Each packfile is an append-only log of
 framed records:
+
+<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 
 ```text
 [MAGIC: "MDB1"] [version: 0x01]
@@ -89,6 +112,8 @@ The design choices:
 
 The `Record` struct in Rust:
 
+<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+
 ```rust
 pub struct Record {
     pub hash: [u8; 16],
@@ -104,6 +129,8 @@ node, that is 4.8% overhead.
 
 The packfile is the durable store; the index is the fast path. Each room gets a
 `LossyIndex` — a flat, power-of-two sized table of 64-bit slots:
+
+<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 
 ```text
 ┌─────────────────────────────────────────────────────────┐
@@ -121,6 +148,8 @@ chasing, no cache-line bouncing.
 
 The index uses **open addressing with linear probing**. The bucket is selected
 by masking the top bits of the 16-byte hash:
+
+<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 
 ```rust
 fn bucket(&self, hash: &[u8; 16]) -> usize {
@@ -232,6 +261,8 @@ traversals will still incur some seeks.
 mtxdb abstracts the backend behind a trait, so the packfile, index, cache, and
 repack code don't depend on a specific engine:
 
+<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+
 ```rust
 pub trait StorageEngine: Send + Sync {
     fn get(&self, room_id: &[u8; 16], id: &NodeId)
@@ -265,6 +296,8 @@ The `InMemoryStorage` implementation is a `HashMap<NodeId, NodeData>` for tests.
 
 Inspired by LeanStore, the crate defines a `NodeRef` enum that can be either
 lazy (just an ID, disk fetch needed) or resolved (data in hand):
+
+<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 
 ```rust
 pub enum NodeRef {
