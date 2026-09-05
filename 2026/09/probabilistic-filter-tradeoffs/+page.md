@@ -340,34 +340,38 @@ microbenchmark data in `filter_spillover.rs`).
 PinSketch is **exact** — zero false positives, zero false negatives. But it
 requires **multiple rounds** of sketch exchange when the decode budget is
 exceeded (sketch splitting). Each round pays `L` in RTT plus wire + decode cost.
-The decode operation is **superlinear** — roughly O(n^1.7) — so it dominates at
-scale:
+Splitting and decoding are governed by the residual symmetric difference `Δ`,
+not the total set cardinality `n`. The following is a **worst-case** baseline:
+each peer has `n` elements and `Δ = n` (no overlap). The decode operation is
+**superlinear** — roughly O(Δ^1.7) — so it dominates at scale:
 
 <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 
 $$
-C_{\text{sketch}} = R \cdot L + C_{\text{decode}}(n)
+C_{\text{sketch}} = R \cdot L + C_{\text{decode}}(\Delta)
 $$
 
 where `R` is the number of split rounds and `C_decode` is the cumulative decode
 cost across all buckets (from `extract+decode` benchmarks in
-`filter_spillover.rs`).
+`filter_spillover.rs`). For this table only, `Δ = n`.
 
 <!-- markdownlint-disable MD013 -->
 
-| n         | Rounds | Total wire (KB) | Decode (ms) | Total (ms) |
-| --------- | ------ | --------------- | ----------- | ---------- |
-| 1,000     | 1      | 15.6            | 0.003       | 30.0       |
-| 10,000    | 1      | 156.3           | 3.0         | 33.0       |
-| 100,000   | 16     | 3,125.0         | 25.1        | 505.1      |
-| 1,000,000 | 128    | 46,875.0        | 198.1       | 4,038.1    |
+| n         | Δ (assumed) | Rounds | Total wire (KB) | Decode (ms) | Total (ms) |
+| --------- | ----------- | ------ | --------------- | ----------- | ---------- |
+| 1,000     | 1,000       | 1      | 15.6            | 0.003       | 30.0       |
+| 10,000    | 10,000      | 1      | 156.3           | 3.0         | 33.0       |
+| 100,000   | 100,000     | 16     | 3,125.0         | 25.1        | 505.1      |
+| 1,000,000 | 1,000,000   | 128    | 46,875.0        | 198.1       | 4,038.1    |
 
 <!-- markdownlint-enable MD013 -->
 
-The decode cost grows superlinearly (O(n^1.7)) and dominates at scale. At
-`n = 100K`, sketch splitting takes ~500ms across 16 rounds; at `n = 1M`, it
-exceeds 4 seconds. This is exactly what the filter strategies avoid: they pay
-one extra RTT up front but eliminate the need for recursive sketch splitting.
+The decode cost grows superlinearly (O(Δ^1.7)) and dominates in this worst-case
+scenario. At `n = Δ = 100K`, sketch splitting takes ~500ms across 16 rounds; at
+`n = Δ = 1M`, it exceeds 4 seconds. This is exactly what the filter strategies
+avoid: they pay one extra RTT up front but eliminate the need for recursive
+sketch splitting. This table is distinct from the cross-over baseline above,
+which uses `n = 1M` and `Δ = 100K`.
 
 ### Bloom filter (FPR sweep)
 
