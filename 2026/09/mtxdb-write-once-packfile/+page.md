@@ -187,8 +187,8 @@ reverse-chronological batches, and late-arriving events land at the tail. The
 packfile on disk is a jumble of chronological positions.
 
 The repacker fixes this. It runs in the background during idle periods and does
-for mtxtxDB what `git gc` does for Git: rewrites reachable data in traversal
-order and reclaims garbage.
+for mtxdb what `git gc` does for Git: rewrites reachable data in traversal order
+and reclaims garbage.
 
 ### The algorithm
 
@@ -229,7 +229,7 @@ traversals will still incur some seeks.
 
 ## The storage engine trait
 
-mtxDB abstracts the backend behind a trait, so the packfile, index, cache, and
+mtxdb abstracts the backend behind a trait, so the packfile, index, cache, and
 repack code don't depend on a specific engine:
 
 ```rust
@@ -278,15 +278,15 @@ resolved nodes for the duration of a traversal without extra allocations.
 
 ## Benchmarks and trade-offs
 
-### What mtxtxDB buys you
+### What mtxdb buys you
 
-| Operation        | B-tree (Synapse)       | mtxtxDB               |
-| ---------------- | ---------------------- | --------------------- |
-| Point lookup     | O(log n) seek          | O(1) index probe      |
-| State resolution | N random seeks         | Sequential scan       |
-| Event ingestion  | Read-modify-write      | Append-repack         |
-| GC               | Tombstone + compaction | Reachability repack   |
-| Crash recovery   | WAL replay             | Scan last good record |
+| Operation        | B-tree (Synapse)    | mtxdb               |
+| ---------------- | ------------------- | ------------------- |
+| Point lookup     | O(log n) seek       | O(1) index probe    |
+| State resolution | N random seeks      | Sequential scan     |
+| Event ingestion  | Read-modify-write   | Append-only         |
+| GC               | Tombstone + compact | Reachability repack |
+| Crash recovery   | WAL replay          | Scan last good rec  |
 
 ### What it costs
 
@@ -322,7 +322,7 @@ become linear scans with zero PDU reads.
 
 ---
 
-mtxDB is early — the `StorageEngine` trait and packfile format are implemented,
+mtxdb is early — the `StorageEngine` trait and packfile format are implemented,
 the lossy index is tested, and the repack manager handles atomic swaps. The
 repository is at
 [github.com/Wombat-Foundation/mtxdb](https://github.com/Wombat-Foundation/mtxdb).
