@@ -4,17 +4,19 @@ date: "2026-09-05"
 description: "Making Matrix possible on spinning disks."
 ---
 
-Matrix homeservers store gigabytes of room data. The event DAG for a busy room
-accumulates millions of HAMT nodes over its lifetime, most of them unreachable
-after the next state transition. Traditional B-tree storage engines treat every
-write as a mutation — read-modify-write cycles that scatter random seeks across
-spinning platters, destroying IOPS.
+Matrix homeservers can store gigabytes of room data. The event DAG for a busy
+room may accumulate millions of HAMT nodes over its lifetime, most of them
+unreachable from the latest state after subsequent transitions. Traditional
+B-tree storage engines are optimized for mutable records; their write paths can
+involve read-modify-write cycles and random I/O that are especially costly on
+spinning disks.
 
 [mtxdb](https://github.com/Wombat-Foundation/mtxdb) takes the opposite approach:
-**never mutate, never delete, never tombstone.** Every node is content-addressed
-and append-only. Garbage collection is a background repack that rewrites only
-reachable data in traversal order. The result is a storage engine where reads
-are either O(1) point lookups or pure sequential scans.
+**never mutate records, never delete records, never tombstone records.** Every
+node is content-addressed and appended once. Garbage collection is a background
+repack that rewrites only reachable data in a chosen traversal order. The result
+is a storage engine with constant-time _in-memory_ index probes and a layout
+that can make selected graph walks much more sequential.
 
 Custom binary format, inspired by `libmdbx` and `LeanStore` (also `SplinterDB`,
 `Fjall`, `git-repack`, and `PGM-index` — the last one mostly as a
@@ -22,7 +24,8 @@ counterexample; a learned index over uniformly random hashes degenerates to the
 flat fanout table below, so that's just what's built). Compile times under 3
 seconds. One `unsafe` block in the whole crate, for `mmap2` — reads make
 effectively zero syscalls, mapped straight to their offset by the index below.
-Cache misses cost a few hundred nanoseconds; hits are free.
+An index probe takes a few memory operations; a cache miss still pays for the
+record read. The cache makes repeated accesses cheap, not literally free.
 
 The POPCOUNT-indexed HAMT trie, WAL, transactions, and snapshots aren't built
 yet — see [Roadmap](#roadmap).
@@ -49,10 +52,12 @@ Synapse's state storage has two hot paths:
    sequential write — but the state snapshot is a content-addressed HAMT node
    that may reference thousands of historical nodes.
 
-On SSDs, both paths are fast enough. On spinning disks — which is what most
-self-hosted Matrix servers actually run — random seeks are catastrophic. A
-single state resolution that touches 500 nodes at random offsets costs 500 × 8ms
-seek time = 4 seconds. That is not a typo.
+On SSDs, both paths may be fast enough for many deployments. On spinning disks,
+random seeks are costly. A deliberately pessimistic state resolution that
+performs 500 uncached, serialized reads at roughly 8 ms each would spend about
+four seconds waiting on seeks. Real workloads benefit from caching, request
+parallelism, and the drive's scheduler, but the example illustrates the scale of
+the gap.
 
 Here's why this matters: the gap between sequential and random reads is
 enormous, even on modern hardware.
@@ -68,17 +73,19 @@ enormous, even on modern hardware.
 
 <!-- markdownlint-enable MD013 -->
 
-A Gen 4 NVMe SSD advertising 7,000 MB/s on the box? When the OS is booting and
-reading thousands of small scattered files, it effectively operates at ~70–80
-MB/s — roughly 1% of its headline speed. The drive isn't broken. The task is
-random, and random performance has a completely different ceiling.
+A Gen 4 NVMe SSD advertising 7,000 MB/s on the box can deliver far less when a
+workload reads thousands of small, scattered files. The drive is not broken:
+sequential bandwidth and random-I/O throughput are different measurements, and
+the latter also depends on queue depth, block size, firmware, and the host.
 
 ([Source](https://www.oscooshop.com/blogs/blogs/ssd-sequential-vs-random-speed))
 
-The core insight is that **most of those 500 nodes are garbage**. A room with 1M
-state events has produced ~4.5M HAMT nodes (4-5 per state change), but the
-current-state closure is maybe a thousand. If you could read only the reachable
-nodes in order, the entire operation becomes a single sequential scan.
+The core hypothesis is that a large share of historical nodes is unreachable
+from a workload's chosen roots. If the reachable closure is small and the
+repacker places it in the order that walk consumes it, the walk approaches a
+sequential scan. That must be measured against real room histories: a current
+state traversal, backfill, and auth-chain walk do not necessarily want the same
+order.
 
 ## Packfile format
 
@@ -113,11 +120,12 @@ The design choices:
   inflation. On Matrix's state nodes (typically 200-2000 bytes each), the
   compression ratio is poor anyway.
 
-- **Immutable once written**: a packfile is never modified after the header is
-  written. Readers hold an `Arc<PackGeneration>` for the duration of a
-  traversal. The repacker writes a new pack, fsyncs, renames atomically, then
-  swaps the room's pointer via `ArcSwap`. The old pack is unlinked when the last
-  reader releases its Arc.
+- **Records are immutable once written**: the active packfile grows by appending
+  complete frames; existing frames are never changed. Readers hold an
+  `Arc<PackGeneration>` for the duration of a traversal. The repacker writes a
+  new, complete pack, fsyncs it, renames it atomically, then swaps the room's
+  pointer via `ArcSwap`. The old pack is unlinked when the last reader releases
+  its `Arc`.
 
 The `Record` struct in Rust:
 
@@ -162,8 +170,9 @@ fn bucket(&self, hash: &[u8; 16]) -> usize {
 }
 ```
 
-The 24-bit tag is extracted from the top of the hash and stored in the slot.
-When probing:
+The 24-bit tag is extracted from the hash and stored in the slot. It must be
+derived from bits independent of those used for the initial bucket; otherwise a
+matching tag adds no discrimination within a probe run. When probing:
 
 1. Compute bucket from hash.
 2. Read the slot. If empty, the key is absent — **empty terminates the probe**.
@@ -178,9 +187,9 @@ probe) surface as verification failures, not silent wrong results.
 
 The index is lossy because:
 
-- **24-bit tags** have a ~1/16M false-positive rate per probe. A collision means
-  one wasted `pread` — the caller reads the record, computes the hash, and
-  continues probing if it doesn't match.
+- **24-bit tags** have a ~1/16M false-positive rate for each occupied slot
+  examined. A collision means one wasted record read — the caller compares the
+  full hash and continues probing if it doesn't match.
 
 - **Empty terminates**: since the table is write-once with no deletions, empty
   slots are never tombstoned. A probe sequence is always bounded by the next
@@ -310,15 +319,61 @@ resolved nodes for the duration of a traversal without extra allocations.
 
 ## Benchmarks and trade-offs
 
+### External-engine benchmark
+
+`scripts/external_bench.py` compares mtxdb with libmdbx and SQLite for the same
+generated workload. The figures below are from one benchmark host, not a claim
+about every disk or production Matrix workload. The run used an Intel Core
+i5-8600K (3.60 GHz), 32 GB of DDR4-2133 memory, and the repository on a 3.6 TB
+Seagate ST4000NM0115 SATA HDD. The system volume was a 256 GB Crucial MX300 SATA
+SSD. Filesystem, library-version, durability-setting, and cache-state details
+also matter when reproducing the results.
+
+The default 0.1 GB run:
+
+<!-- markdownlint-disable MD013 -->
+
+| Engine | Bulk write (ms) | Warm open (ms) | Checkpoint (ms) | Point lookup (μs) | Grow append (ms) | Grow sync (ms) | Steady append (ms) | Steady sync (ms) | On-disk bytes | Index size | Memory open | Memory warm |
+| ------ | --------------- | -------------- | --------------- | ----------------- | ---------------- | -------------- | ------------------ | ---------------- | ------------- | ---------- | ----------- | ----------- |
+| mtxdb  | 102.9           | 0.184          | 0.237           | 0.32              | 28.92            | 3.65           | 0.44               | 0.12             | 100.6 MB      | 3.0 MB     | 6.8 MB      | 106.3 MB    |
+| mdbx   | 364.7           | 0.608          | 0.545           | 0.60              | 8.92             | 1.23           | 1.70               | 0.70             | 192.0 MB      | in-file    | 1.5 MB      | 179.5 MB    |
+| sqlite | 2827.7          | 0.108          | 0.126           | 30.11             | 43.95            | 1.38           | 10.83              | 0.90             | 436.6 MB      | in-file    | 1.6 MB      | 3.4 MB      |
+
+<!-- markdownlint-enable MD013 -->
+
+At a 1 GB sample (`MTXDB_BENCH_EXT_GB=1`):
+
+<!-- markdownlint-disable MD013 -->
+
+| Engine | Bulk write (ms) | Warm open (ms) | Checkpoint (ms) | Point lookup (μs) | Grow append (ms) | Grow sync (ms) | Steady append (ms) | Steady sync (ms) | On-disk bytes | Index size | Memory open | Memory warm |
+| ------ | --------------- | -------------- | --------------- | ----------------- | ---------------- | -------------- | ------------------ | ---------------- | ------------- | ---------- | ----------- | ----------- |
+| mtxdb  | 1076.4          | 2.559          | 2.068           | 0.36              | 17.04            | 0.14           | 0.78               | 0.14             | 1011.6 MB     | 48.0 MB    | 29.9 MB     | 133.8 MB    |
+| mdbx   | 25173.7         | 0.406          | 0.367           | 1.45              | 65.79            | 1.80           | 2.90               | 0.94             | 1.7 GB        | in-file    | 1.5 MB      | 1.4 GB      |
+| sqlite | 38249.5         | 0.107          | 0.123           | 38.06             | 52.87            | 1.56           | 15.27              | 1.20             | 4.3 GB        | in-file    | 1.7 MB      | 3.5 MB      |
+
+<!-- markdownlint-enable MD013 -->
+
+At these sizes, mtxdb writes the initial data set faster and uses less disk
+space than the other tested engines. Its explicit in-memory index grows with the
+data set; mdbx and SQLite keep their index structures in their database files.
+The results also show the trade-off in the growth path: mdbx is faster for the
+0.1 GB growing append, while mtxdb is faster at the 1 GB sample. These are
+observations from two runs, not a substitute for repeated, controlled
+measurements with representative Matrix data.
+
 ### What mtxdb buys you
 
-| Operation        | B-tree (Synapse)    | mtxdb               |
-| ---------------- | ------------------- | ------------------- |
-| Point lookup     | O(log n) seek       | O(1) index probe    |
-| State resolution | N random seeks      | Sequential scan     |
-| Event ingestion  | Read-modify-write   | Append-only         |
-| GC               | Tombstone + compact | Reachability repack |
-| Crash recovery   | WAL replay          | Scan last good rec  |
+<!-- markdownlint-disable MD013 -->
+
+| Operation        | B-tree (Synapse)    | mtxdb                                                   |
+| ---------------- | ------------------- | ------------------------------------------------------- |
+| Point lookup     | Tree traversal      | O(1) index probe + record read                          |
+| State resolution | Often scattered I/O | Can be near-sequential after a workload-specific repack |
+| Event ingestion  | Read-modify-write   | Append-only                                             |
+| GC               | Tombstone + compact | Reachability repack                                     |
+| Crash recovery   | WAL replay          | Scan last good rec                                      |
+
+<!-- markdownlint-enable MD013 -->
 
 ### What it costs
 
@@ -331,9 +386,10 @@ resolved nodes for the duration of a traversal without extra allocations.
   for Matrix (state is immutable per state group) but wouldn't work for a
   mutable key-value store.
 
-- **Tag collisions at 24 bits**: ~1 in 16M per probe. A collision costs one
-  wasted `pread` (8ms on a spinning disk). At 100K nodes per room, expect ~0.006
-  wasted reads per lookup. At 1M nodes, ~0.06. Negligible.
+- **Tag collisions at 24 bits**: about one in 16M occupied slots examined. The
+  expected wasted reads depend on the probe length, not the total nodes in the
+  room. At a controlled load factor, that remains negligible; it should still be
+  counted in benchmark instrumentation.
 
 - **Per-room file proliferation**: each room gets its own pack set. A server in
   10K rooms needs 10K+ files. Mitigate with an LRU'd fd cache and a shared
@@ -354,8 +410,8 @@ become linear scans with zero PDU reads.
 
 ## Roadmap
 
-Built: packfile format, lossy fanout index, `StorageEngine` trait, `NodeCache`,
-topological repacker.
+Implemented so far: packfile format, lossy fanout index, `StorageEngine` trait,
+`NodeCache`, topological repacker.
 
 Not built:
 
@@ -366,7 +422,8 @@ Not built:
 - **WAL, transactions, snapshots, backups, repair.** Durability today is
   fsync-pack, fsync-rename. That's it.
 - **Segment/bulk queries** beyond `get_many`.
-- **A RocksDB benchmark.** Until it exists, "faster than RocksDB" is unverified.
+- **A RocksDB benchmark.** The external benchmark currently covers mtxdb,
+  libmdbx, and SQLite. Any claim about RocksDB remains unverified.
 
 ---
 
