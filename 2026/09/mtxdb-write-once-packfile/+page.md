@@ -153,12 +153,12 @@ The shared shard pool is the durable store; the index is the fast path. Each
 room gets a `LossyIndex` — a flat, power-of-two sized table of 64-bit slots:
 
 ```text
-┌────────────────────────────────────────────────────────────┐
-│ IndexSlot (u64)                                            │
-├──────────────┬───────────────┬─────────────────────────────┤
-│ tag (24 bit) │ shard (12 bit)│ offset (28 bit)             │
-│ fingerprint  │ shard ID      │ byte offset within shard    │
-└──────────────┴───────────────┴─────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│ IndexSlot (u64)                                             │
+├──────────────┬────────────────┬─────────────────────────────┤
+│ tag (24 bit) │ shard (12 bit) │ offset (28 bit)             │
+│ fingerprint  │ shard ID       │ byte offset within shard    │
+└──────────────┴────────────────┴─────────────────────────────┘
 ```
 
 The slot is a single `u64`. Lookup is a single memory access — no pointer
@@ -336,9 +336,9 @@ resolved nodes for the duration of a traversal without extra allocations.
 
 ### External-engine benchmark
 
-`scripts/external_bench.py` compares mtxdb with libmdbx and SQLite for the same
-generated workload. The figures below are from one benchmark host, not a claim
-about every disk or production Matrix workload. The run used an Intel Core
+The external benchmark compares mtxdb with libmdbx, SQLite, and Fjall for the
+same generated workload. The figures below are from one benchmark host, not a
+claim about every disk or production Matrix workload. The run used an Intel Core
 i5-8600K (3.60 GHz), 32 GB of DDR4-2133 memory, and the repository on a 3.6 TB
 Seagate ST4000NM0115 SATA HDD. The system volume was a 256 GB Crucial MX300 SATA
 SSD. Filesystem, library-version, durability-setting, and cache-state details
@@ -347,6 +347,26 @@ also matter when reproducing the results.
 One invocation swept 0.0625, 0.125, 0.25, 0.5, and 1.0 GB, testing all three
 mtxdb checksum modes at each size. `full crc32` is mtxdb's default and is the
 directly relevant comparison.
+
+The current `make bench` harness also reports Fjall at its default 0.1 GB
+target. That run uses the write-only mtxdb mode and is shown separately because
+0.1 GB is not one of the sweep sizes below.
+
+#### ── At 0.1 GB (make bench) ────────────────────────────────────────────────
+
+<!-- markdownlint-disable MD013 -->
+
+| Engine |   CRC32   | Bulk write (ms) | Warm open (ms) | Check-point (ms) | Point lookup (μs) | First append (ms) | First sync (ms) | Steady append (ms) | Steady sync (ms) | Disk (MB) | Index (MB) | RAM open (MB) | RAM warm (MB) |
+| :----: | :-------: | --------------: | -------------: | ---------------: | ----------------: | ----------------: | --------------: | -----------------: | ---------------: | --------: | ---------: | ------------: | ------------: |
+| mtxdb  | writeonly |           113.6 |          0.333 |            0.248 |              0.32 |             29.47 |            3.87 |               0.52 |             0.15 |     105.4 |        3.1 |           4.1 |         108.6 |
+|  mdbx  |    n/a    |           340.7 |          0.547 |            0.513 |              0.55 |              9.39 |            1.70 |               1.89 |             0.72 |     201.3 |        n/a |           5.7 |         192.3 |
+| sqlite |    n/a    |          2791.1 |          0.106 |            0.129 |             29.61 |             41.38 |            1.35 |              10.69 |             0.87 |     457.8 |        n/a |          12.4 |          12.4 |
+| fjall  |    n/a    |           500.9 |          8.027 |            4.803 |              4.00 |              2.11 |            1.54 |               0.54 |             0.39 |     137.8 |        n/a |         120.4 |         120.4 |
+
+<!-- markdownlint-enable MD013 -->
+
+Fjall reports its on-disk footprint rather than a separately measured in-memory
+index, like libmdbx and SQLite in this harness.
 
 #### ── At 0.0625 GB ──────────────────────────────────────────────────────────
 
@@ -417,6 +437,8 @@ directly relevant comparison.
 | sqlite |  n/a  |     36968.1     |     0.118      |   **_0.113_**    |       37.52       |       52.71       |      1.66       |       13.96        |       0.90       |    4300    |   _n/a_    |   **_1.8_**   |   **_3.6_**   |
 
 <!-- markdownlint-enable MD013 -->
+
+---
 
 `none` disables frame CRC32 generation and read verification; `write` retains
 frame CRCs but skips their read-time verification; `full` verifies frame CRCs on
