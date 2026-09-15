@@ -2,6 +2,9 @@
 title: "[DRAFT] mtxdb: A write-once packfile storage engine for Matrix"
 date: "2026-09-05"
 description: "Making Matrix possible on spinning disks."
+subtitle: "An append-only, content-addressed store for Matrix state."
+tags: ["Matrix", "Storage", "Performance"]
+draft: true
 ---
 
 Matrix homeservers can store gigabytes of room data. The event DAG for a busy
