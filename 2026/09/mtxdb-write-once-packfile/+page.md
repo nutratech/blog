@@ -344,15 +344,17 @@ Seagate ST4000NM0115 SATA HDD. The system volume was a 256 GB Crucial MX300 SATA
 SSD. Filesystem, library-version, durability-setting, and cache-state details
 also matter when reproducing the results.
 
-One invocation swept 0.0625, 0.125, 0.25, 0.5, and 1.0 GB, testing all three
-mtxdb checksum modes at each size. `full crc32` is mtxdb's default and is the
-directly relevant comparison.
+The latest sweep ran 0.0625, 0.125, 0.25, 0.5, and 1.0 GB (with a repeated
+0.0625 GB sample), testing all three mtxdb checksum modes plus libmdbx, SQLite,
+and Fjall at every size. `full crc32` is mtxdb's default and is the directly
+relevant comparison. The tables below use the latest run; timings vary between
+invocations on this host.
 
-The current `make bench` harness also reports Fjall at its default 0.1 GB
-target. That run uses the write-only mtxdb mode and is shown separately because
-0.1 GB is not one of the sweep sizes below.
+The current `make bench` harness also reports a separate default 0.1 GB target.
+That run uses the write-only mtxdb mode and is shown separately because 0.1 GB
+is not one of the sweep sizes below.
 
-#### ── At 0.1 GB (make bench) ────────────────────────────────────────────────
+#### ── At 0.1 GB (make bench, latest run) ─────────────────────────────────────
 
 <!-- markdownlint-disable MD013 -->
 
