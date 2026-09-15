@@ -1,10 +1,10 @@
 ---
-title: "mtxdb: pure sequential I/O, beats fjall and mdbx"
+title: "mtxdb: append-only packfiles for Matrix DAG storage"
 date: "2026-09-05"
 description:
-  "Run Synapse on spinning HDDs. Pure sequential I/O, inspired by MDBX,
-  BadgerDB, and WiscKey."
-subtitle: "Sequential DB, inspired by MDBX, BadgerDB, and WiscKey."
+  "Run Synapse on spinning HDDs. Append-oriented packfile storage with a
+  persisted index, inspired by MDBX, BadgerDB, and WiscKey."
+subtitle: "Append-only packfiles, inspired by MDBX, BadgerDB, and WiscKey."
 tags: ["Matrix", "Storage", "Performance"]
 draft: false
 ---
@@ -18,10 +18,17 @@ spinning disks.
 
 [mtxdb](https://github.com/Wombat-Foundation/mtxdb) takes the opposite approach:
 **never mutate individual records.** New records are appended; a collection can
-be deleted logically, and physical space is reclaimed by a background repack
-that rewrites reachable data in a chosen traversal order. The result is a
-storage engine with constant-time _in-memory_ index probes and a layout that can
-make selected graph walks much more sequential.
+be deleted logically, and physical space is reclaimed by a caller-scheduled
+repack that rewrites reachable data in a chosen traversal order. The result is
+an append-oriented storage engine with constant-time _in-memory_ index probes
+and a layout hypothesized to make selected graph walks more sequential
+(unmeasured so far — see
+[Benchmarks and trade-offs](#benchmarks-and-trade-offs)).
+
+mtxdb is append-oriented, not pure sequential I/O: cold point reads are still
+location-directed record reads, and repack reads can be scattered before the
+repacker writes sequential output. The sequential win is on the write path
+(appends) and on reopen via a persisted index.
 
 Custom binary format, inspired by `libmdbx` and `LeanStore` (also `SplinterDB`,
 `Fjall`, `git-repack`, and `PGM-index` — the last one mostly as a
@@ -65,7 +72,8 @@ parallelism, and the drive's scheduler, but the example illustrates the scale of
 the gap.
 
 Here's why this matters: the gap between sequential and random reads is
-enormous, even on modern hardware.
+enormous, even on modern hardware. The table below is illustrative
+(order-of-magnitude, not a reproducible benchmark for this workload):
 
 <!-- markdownlint-disable MD013 -->
 
@@ -82,9 +90,10 @@ A Gen 4 NVMe SSD advertising 7,000 MB/s on the box can deliver far less when a
 workload reads thousands of small, scattered files. The drive is not broken:
 sequential bandwidth and random-I/O throughput are different measurements, and
 the latter also depends on queue depth, block size, firmware, and the host.
-
-The sequential-versus-random figures are summarized from a comparative drive
-benchmark.[^ssd_random]
+Treat the figures above as illustrative vendor-spec magnitudes; they carry no
+workload/queue-depth methodology for this article's premise. Check vendor spec
+sheets and independent storage benchmarks (e.g. with `fio` at a stated queue
+depth and block size) before reasoning about a specific drive.
 
 The core hypothesis is that a large share of historical nodes is unreachable
 from a workload's chosen roots. If the reachable closure is small and the
@@ -100,7 +109,8 @@ frame carries its collection (room) ID, so a shard can contain records from many
 rooms while each room retains its own logical index:
 
 ```text
-[MAGIC: "MDB1"] [version: 0x01]
+[MAGIC: "MTDB"] [version: 0x04]
+[4 KiB shard header: pack ID, creation time, feature flags, header CRC]
 
 Record 0:
   [u32 len]       — byte length through node bytes, little-endian
@@ -116,6 +126,10 @@ Record 1:
 ```
 
 The design choices:
+
+- **Fixed 4 KiB shard header**: every shard file starts with a 4 KiB header
+  carrying the magic `MTDB`, version `0x04`, pack ID, creation time, feature
+  flags, and a header CRC. Record frames follow the header.
 
 - **Caller-supplied structural IDs**: the API accepts a 16-byte node ID with
   each write and records it as index-rebuild metadata. The caller is responsible
@@ -193,8 +207,8 @@ matching tag adds no discrimination within a probe run. When probing:
 4. Advance to the next bucket (linear probing).
 
 The caller then verifies the candidate by reading the record from disk and
-comparing the full 16-byte hash. Tag collisions (at 24 bits, ~1 in 16M per
-probe) surface as verification failures, not silent wrong results.
+comparing the full 16-byte hash. Tag collisions surface as verification
+failures, not silent wrong results.
 
 ### Why "lossy"
 
@@ -223,16 +237,16 @@ room, rather than with the number of shared shard files.
 
 The 64-bit slot packs three fields with zero wasted bits:
 
-| Field  | Bits | Range    | Purpose                        |
-| ------ | ---- | -------- | ------------------------------ |
-| tag    | 24   | 0–16M    | Fast rejection (0 = empty)     |
-| shard  | 12   | 0–4095   | Which shared shard contains it |
-| offset | 28   | ~0–256MB | Byte offset within the shard   |
+| Field  | Bits | Range    | Purpose                           |
+| ------ | ---- | -------- | --------------------------------- |
+| tag    | 24   | 0–16M    | Fast rejection (zero is valid)    |
+| shard  | 12   | 0–4095   | Which shared shard contains it    |
+| offset | 28   | ~0–256MB | Byte offset within the shard (+1) |
 
 The pool can address 4,096 shards of just under 256 MiB each — about 1 TiB in
-total. Empty slots are all-zeros, and since hash values are uniformly random,
-the probability of a legitimate hash mapping to tag 0 is 1/16M —
-indistinguishable from "not present" in practice.
+total. Empty slots are the all-zero `u64`. Offsets are encoded as `offset + 1`,
+so a valid slot with tag zero still has a nonzero offset field and is
+distinguishable from empty.
 
 ## Topological repack
 
@@ -241,9 +255,10 @@ its read order. Events arrive out of order from federation, backfill fetches
 history in reverse-chronological batches, and late-arriving events land at the
 tail. A room's records can therefore be physically scattered through the pool.
 
-The repacker fixes this. It runs in the background during idle periods and does
-for mtxdb what `git gc` does for Git: rewrites reachable data in traversal order
-and reclaims garbage.
+The repacker fixes this. It is caller-scheduled, not a background service: the
+engine exposes `needs_repack`, but nothing in `mtxdb-core` polls it or runs a
+worker. The caller decides when to repack. It does for mtxdb what `git gc` does
+for Git: rewrites reachable data in traversal order and reclaims garbage.
 
 ### The algorithm
 
@@ -264,12 +279,18 @@ and reclaims garbage.
    drops 99.98% of its logical contents; physical space becomes reclaimable when
    no room still references the source shards.
 
-### Why this works
+### Why this might work (hypothesis, not yet benchmarked)
 
 Content-addressing makes this trivially correct. The repacker doesn't need to
 know what a node contains — it just follows hashes. Repacking is logically
 per-room, even though its physical destination shards are shared; a batch repack
 can compact several rooms through one output stream.
+
+Near-sequential graph walks after repack remain a hypothesis: the harness below
+measures bulk write, reopen, point lookup, and append latency. It does not
+measure a Matrix DAG traversal before/after topological repack (seek count or
+wall time). Until that traversal benchmark exists on real room histories, treat
+locality as the prize to measure, not a demonstrated result.
 
 ### The branching caveat
 
@@ -342,46 +363,63 @@ resolved nodes for the duration of a traversal without extra allocations.
 
 ### External-engine benchmark
 
-The external benchmark compares mtxdb with libmdbx, SQLite, and Fjall for the
-same generated workload. The figures below are from one benchmark host, not a
-claim about every disk or production Matrix workload. The run used an Intel Core
+> Topology asymmetry (applies to every external table below): mtxdb writes each
+> batch across 32 collections, while Fjall/MDBX/SQLite write one partition/table
+> in this harness. That explains a meaningful part of any append-path gap — do
+> not read these as same-shape workloads.
+
+The external benchmark compares mtxdb with libmdbx, SQLite, and Fjall on a
+generated workload. The figures below are from one benchmark host, not a claim
+about every disk or production Matrix workload. The run used an Intel Core
 i5-8600K (3.60 GHz), 32 GB of DDR4-2133 memory, and the repository on a 3.6 TB
 Seagate ST4000NM0115 SATA HDD. The system volume was a 256 GB Crucial MX300 SATA
 SSD. Filesystem, library-version, durability-setting, and cache-state details
 also matter when reproducing the results.
 
-The latest sweep ran 0.0625, 0.125, 0.25, 0.5, and 1.0 GB (with a repeated
+The sweep below covers 0.0625, 0.125, 0.25, 0.5, and 1.0 GB (with a repeated
 0.0625 GB sample), testing all three mtxdb checksum modes plus libmdbx, SQLite,
-and Fjall at every size. `full crc32` is mtxdb's default and is the directly
-relevant comparison. The tables below use the latest run; timings vary between
-invocations on this host.
+and Fjall at every size — including 0.5 and 1.0 GB. `full crc32` is mtxdb's
+default and is the directly relevant comparison. The harness names the middle
+mode `writeonly` (CRCs written but not re-verified on read); the tables below
+use the harness names verbatim.
 
-The current `make bench` harness also reports a separate default 0.1 GB target.
-That run uses the write-only mtxdb mode and is shown separately because 0.1 GB
-is not one of the sweep sizes below.
+All sweep tables below come from one captured run sequence on the host above:
 
-#### ── At 0.1 GB (make bench, latest run) ─────────────────────────────────────
+```shell
+for gb in 0.0625 0.0625 0.125 0.25 0.5 1.0; do
+  MTXDB_BENCH_EXT_GB=$gb python scripts/external_bench.py
+done
+```
 
-<!-- markdownlint-disable MD013 -->
+The 0.0625 GB tables show the second (repeat) run; the first run's bulk-write
+figures were mtxdb 66.1 / 68.8 / 68.5 ms (none/writeonly/full), mdbx 177.8 ms,
+fjall 250.9 ms, sqlite 1493.9 ms — the repeat differed by a few percent, except
+Fjall's first-append (1.57 ms first run vs 2.24 ms repeat), which is itself a
+useful variance signal. Timings vary between invocations on this host; treat
+every table as one captured observation, not a stable ranking.
 
-|   Engine    |   CRC32   | Bulk write (ms) | Warm open (ms) | Check-point (ms) | Point lookup (μs) | First append (ms) | First sync (ms) | Steady append (ms) | Steady sync (ms) | Disk (MB) | Index (MB) | RAM open (MB) | RAM warm (MB) |
-| :---------: | :-------: | --------------: | -------------: | ---------------: | ----------------: | ----------------: | --------------: | -----------------: | ---------------: | --------: | ---------: | ------------: | ------------: |
-|    mtxdb    | writeonly |           113.6 |          0.333 |            0.248 |              0.32 |             29.47 |            3.87 |               0.52 |             0.15 |     105.4 |        3.1 |           4.1 |         108.6 |
-|    mdbx     |    n/a    |           340.7 |          0.547 |            0.513 |              0.55 |              9.39 |            1.70 |               1.89 |             0.72 |     201.3 |        n/a |           5.7 |         192.3 |
-|   sqlite    |    n/a    |          2791.1 |          0.106 |            0.129 |             29.61 |             41.38 |            1.35 |              10.69 |             0.87 |     457.8 |        n/a |          12.4 |          12.4 |
-| fjall (lsm) |    n/a    |           250.9 |          2.243 |            2.414 |              3.24 |              1.57 |            1.12 |               0.41 |             0.30 |      94.1 |        n/a |          70.3 |          70.3 |
-|    fjall    |    n/a    |           500.9 |          8.027 |            4.803 |              4.00 |              2.11 |            1.54 |               0.54 |             0.39 |     137.8 |        n/a |         120.4 |         120.4 |
+Memory columns: `Index (MB)` is not comparable across engines — for mtxdb it is
+measured in-memory index bytes, while for Fjall/MDBX/SQLite the harness reports
+file bytes as a proxy (shown as `in-file`, unbolded). Compare memory across
+engines with `RAM open (MB)` / `RAM warm (MB)` (PSS), not with `Index (MB)`.
+Disk figures the harness printed in GB are converted to MB (×1024) and rounded.
 
-<!-- markdownlint-enable MD013 -->
+The harness also has a separate default 0.1 GB `make bench` target that is not
+part of this sweep capture; it is not shown here pending its own versioned
+capture. An earlier draft of this post showed a 0.1 GB table that mixed rows
+from different sweep sizes — that table has been removed for exactly that
+reason.
 
-Fjall reports its on-disk footprint rather than a separately measured in-memory
-index, like libmdbx and SQLite in this harness.
-
-#### Sustained-write tail (512 MB)
+#### Sustained-write tail (512 MB, exploratory)
 
 With `MTXDB_BENCH_SUSTAINED=1` and `MTXDB_BENCH_SUSTAINED_MB=512`, six
 subprocess runs completed with `VERIFY_OK=true`. This phase reports batch-tail
-latency, which the size-sweep table does not capture:
+latency, which the size-sweep table does not capture. At 512 MB there are only
+about 125 durable batches — useful exploratory data, but not enough for robust
+p99 or "tightest spread" claims. Per-run samples/variance are not shown here;
+repeat with randomized order before treating any tail gap as stable. Same
+topology asymmetry as above (mtxdb over 32 collections, others over one
+partition/table).
 
 <!-- markdownlint-disable MD013 -->
 
@@ -394,109 +432,139 @@ latency, which the size-sweep table does not capture:
 
 <!-- markdownlint-enable MD013 -->
 
-At this volume, mtxdb has the tightest p50-to-p99 spread; MDBX shows the worst
-write tail, while Fjall's dominant cost is reopen time. SQLite is consistently
-slow but comparatively flat. These are one-host observations, not universal
-performance guarantees.
+At this volume on this host, mtxdb's observed p50-to-p99 range was narrower than
+MDBX's in these runs; Fjall's dominant observed cost was reopen time, and SQLite
+was consistently slow but comparatively flat. Treat this as an initial one-host
+observation, not a universal performance guarantee and not a robust p99
+comparison.
 
 #### ── At 0.0625 GB ──────────────────────────────────────────────────────────
 
 <!-- markdownlint-disable MD013 -->
 
-|   Engine    | CRC32 | Bulk write (ms) | Warm open (ms) | Check-point (ms) | Point lookup (μs) | First append (ms) | First sync (ms) | Steady append (ms) | Steady sync (ms) | Disk (MB) | Index (MB) | RAM open (MB) | RAM warm (MB) |
-| :---------: | :---: | :-------------: | :------------: | :--------------: | :---------------: | :---------------: | :-------------: | :----------------: | :--------------: | :-------: | :--------: | :-----------: | :-----------: |
-|    mtxdb    | none  |   **_67.0_**    |  **_0.079_**   |   **_0.107_**    |    **_0.31_**     |    **_1.82_**     |   **_0.13_**    |     **_0.47_**     |       0.14       | **_63_**  | **_3.0_**  |      5.7      |     68.9      |
-|    mtxdb    | write |      69.9       |     0.083      |      0.126       |       0.34        |       1.88        |   **_0.13_**    |        0.48        |    **_0.13_**    | **_63_**  | **_3.0_**  |      5.8      |     68.9      |
-|    mtxdb    | full  |      72.4       |     0.155      |      0.267       |       0.50        |       1.89        |      0.14       |        0.51        |       0.15       | **_63_**  | **_3.0_**  |      6.7      |     68.9      |
-|    mdbx     |  n/a  |      209.1      |     0.478      |      1.039       |       0.65        |       22.39       |      1.39       |        1.80        |       0.77       |    112    |   _n/a_    |   **_1.5_**   |     112.6     |
-|   sqlite    |  n/a  |     1622.6      |     0.125      |      0.112       |       28.77       |       41.43       |      1.44       |       10.46        |       0.91       |    273    |   _n/a_    |      1.9      |   **_3.7_**   |
-| fjall (lsm) |  n/a  |      250.9      |     2.243      |      2.414       |       3.24        |       1.57        |      1.12       |        0.41        |       0.30       |   94.1    |    n/a     |     70.3      |     70.3      |
+|   Engine    |   CRC32   | Bulk write (ms) | Warm open (ms) | Check-point (ms) | Point lookup (μs) | First append (ms) | First sync (ms) | Steady append (ms) | Steady sync (ms) |  Disk (MB) | Index (MB) | RAM open (MB) | RAM warm (MB) |
+| :---------: | :-------: | --------------: | -------------: | ---------------: | ----------------: | ----------------: | --------------: | -----------------: | ---------------: | ---------: | ---------: | ------------: | ------------: |
+|    mtxdb    |   none    |      **_65.0_** |          0.082 |      **_0.113_** |              0.32 |        **_1.65_** |            0.13 |               0.72 |             0.13 | **_63.2_** |        3.0 |           6.0 |          69.2 |
+|    mtxdb    | writeonly |            67.8 |    **_0.080_** |            0.114 |        **_0.31_** |              1.71 |      **_0.12_** |               0.74 |             0.13 | **_63.2_** |        3.0 |           6.0 |          69.2 |
+|    mtxdb    |   full    |            67.9 |          0.165 |            0.212 |              0.45 |              1.66 |      **_0.12_** |               0.72 |       **_0.12_** | **_63.2_** |        3.0 |           7.0 |          69.2 |
+|    mdbx     |    n/a    |           174.7 |          0.499 |            0.478 |              0.50 |             14.27 |            1.16 |               1.67 |             0.72 |      112.0 |    in-file |           1.9 |         113.0 |
+|   sqlite    |    n/a    |          1535.5 |          0.102 |            0.119 |             26.49 |             38.36 |            1.25 |               9.58 |             0.78 |      272.9 |    in-file |     **_1.7_** |     **_3.5_** |
+| fjall (lsm) |    n/a    |           250.8 |          1.753 |            3.414 |              3.08 |              2.24 |            1.60 |         **_0.63_** |             0.43 |       94.1 |    in-file |          70.3 |          70.3 |
 
 <!-- markdownlint-enable MD013 -->
+
+Topology asymmetry: mtxdb spreads batches over 32 collections; others use one
+partition/table. Compare memory with `RAM open/warm (PSS)`, not `Index (MB)`.
 
 #### ── At 0.125 GB ───────────────────────────────────────────────────────────
 
 <!-- markdownlint-disable MD013 -->
 
-|   Engine    | CRC32 | Bulk write (ms) | Warm open (ms) | Check-point (ms) | Point lookup (μs) | First append (ms) | First sync (ms) | Steady append (ms) | Steady sync (ms) | Disk (MB) | Index (MB) | RAM open (MB) | RAM warm (MB) |
-| :---------: | :---: | :-------------: | :------------: | :--------------: | :---------------: | :---------------: | :-------------: | :----------------: | :--------------: | :-------: | :--------: | :-----------: | :-----------: |
-|    mtxdb    | none  |   **_135.1_**   |     0.082      |   **_0.113_**    |       0.34        |       3.77        |      0.13       |        0.46        |       0.13       | **_127_** | **_6.0_**  |      3.5      |     109.5     |
-|    mtxdb    | write |      141.1      |  **_0.078_**   |   **_0.113_**    |    **_0.33_**     |       3.82        |      0.13       |        0.50        |       0.14       | **_127_** | **_6.0_**  |      3.5      |     109.4     |
-|    mtxdb    | full  |      139.0      |     0.331      |      0.391       |       0.50        |    **_3.60_**     |   **_0.11_**    |     **_0.44_**     |    **_0.12_**    | **_127_** | **_6.0_**  |      5.6      |     109.6     |
-|    mdbx     |  n/a  |      422.6      |     0.563      |      0.553       |       0.66        |       17.17       |      1.27       |        2.14        |       1.02       |    224    |   _n/a_    |   **_1.5_**   |     223.5     |
-|   sqlite    |  n/a  |     3729.9      |     0.111      |      0.127       |       31.06       |       46.69       |      1.40       |       11.58        |       0.97       |    546    |   _n/a_    |      1.8      |   **_3.6_**   |
-| fjall (lsm) |  n/a  |      500.9      |     5.342      |      3.359       |       3.82        |       1.20        |      0.86       |        0.31        |       0.23       |   156.2   |    n/a     |     138.3     |     138.3     |
+|   Engine    |   CRC32   | Bulk write (ms) | Warm open (ms) | Check-point (ms) | Point lookup (μs) | First append (ms) | First sync (ms) | Steady append (ms) | Steady sync (ms) |   Disk (MB) | Index (MB) | RAM open (MB) | RAM warm (MB) |
+| :---------: | :-------: | --------------: | -------------: | ---------------: | ----------------: | ----------------: | --------------: | -----------------: | ---------------: | ----------: | ---------: | ------------: | ------------: |
+|    mtxdb    |   none    |     **_128.6_** |    **_0.081_** |      **_0.110_** |        **_0.30_** |              3.12 |      **_0.11_** |               1.07 |       **_0.13_** | **_126.5_** |        6.0 |           5.8 |         111.8 |
+|    mtxdb    | writeonly |           139.7 |    **_0.081_** |            0.111 |        **_0.30_** |              3.22 |            0.13 |               1.25 |             0.16 | **_126.5_** |        6.0 |           5.7 |         111.7 |
+|    mtxdb    |   full    |           137.6 |          0.273 |            0.321 |              0.46 |              3.09 |            0.12 |               1.10 |       **_0.13_** | **_126.5_** |        6.0 |           7.7 |         111.7 |
+|    mdbx     |    n/a    |           394.8 |          0.599 |            0.541 |              0.55 |             18.84 |            1.32 |               2.07 |             0.78 |       224.0 |    in-file |           1.9 |         223.9 |
+|   sqlite    |    n/a    |          3318.2 |          0.106 |            0.112 |             28.62 |             42.36 |            1.35 |              10.60 |             0.81 |       545.6 |    in-file |     **_1.7_** |     **_3.5_** |
+| fjall (lsm) |    n/a    |           500.9 |          5.342 |            3.359 |              3.82 |        **_1.20_** |            0.86 |         **_0.31_** |             0.23 |       156.2 |    in-file |         138.3 |         138.3 |
 
 <!-- markdownlint-enable MD013 -->
+
+Topology asymmetry: mtxdb spreads batches over 32 collections; others use one
+partition/table. Compare memory with `RAM open/warm (PSS)`, not `Index (MB)`.
 
 #### ── At 0.25 GB ────────────────────────────────────────────────────────────
 
 <!-- markdownlint-disable MD013 -->
 
-|   Engine    | CRC32 | Bulk write (ms) | Warm open (ms) | Check-point (ms) | Point lookup (μs) | First append (ms) | First sync (ms) | Steady append (ms) | Steady sync (ms) | Disk (MB) | Index (MB) | RAM open (MB) | RAM warm (MB) |
-| :---------: | :---: | :-------------: | :------------: | :--------------: | :---------------: | :---------------: | :-------------: | :----------------: | :--------------: | :-------: | :--------: | :-----------: | :-----------: |
-|    mtxdb    | none  |   **_263.1_**   |     0.097      |      0.112       |    **_0.34_**     |       6.46        |   **_0.12_**    |     **_0.51_**     |       0.13       | **_253_** | **_12.0_** |      2.6      |     110.5     |
-|    mtxdb    | write |      288.3      |  **_0.081_**   |      0.124       |       0.35        |    **_6.42_**     |      0.14       |        0.53        |       0.13       | **_253_** | **_12.0_** |      2.6      |     110.5     |
-|    mtxdb    | full  |      291.1      |     0.698      |      0.581       |       0.50        |       6.46        |   **_0.12_**    |        0.54        |       0.14       | **_253_** | **_12.0_** |      6.6      |     110.5     |
-|    mdbx     |  n/a  |     1163.3      |     0.739      |      0.716       |       0.83        |       24.42       |      1.39       |        2.30        |       0.91       |    448    |   _n/a_    |   **_1.5_**   |     444.9     |
-|   sqlite    |  n/a  |     8196.5      |     0.115      |   **_0.110_**    |       33.16       |       44.77       |      1.29       |       11.71        |    **_0.87_**    |   1100    |   _n/a_    |      1.7      |   **_3.5_**   |
-| fjall (lsm) |  n/a  |     1001.1      |     6.177      |      11.594      |       4.36        |       2.08        |      1.49       |        0.54        |       0.39       |   280.4   |    n/a     |     275.4     |     275.4     |
+|   Engine    |   CRC32   | Bulk write (ms) | Warm open (ms) | Check-point (ms) | Point lookup (μs) | First append (ms) | First sync (ms) | Steady append (ms) | Steady sync (ms) |   Disk (MB) | Index (MB) | RAM open (MB) | RAM warm (MB) |
+| :---------: | :-------: | --------------: | -------------: | ---------------: | ----------------: | ----------------: | --------------: | -----------------: | ---------------: | ----------: | ---------: | ------------: | ------------: |
+|    mtxdb    |   none    |     **_276.7_** |    **_0.080_** |            0.113 |        **_0.33_** |              4.88 |      **_0.12_** |               2.20 |             0.18 | **_252.9_** |       12.0 |           9.3 |         117.2 |
+|    mtxdb    | writeonly |           296.2 |    **_0.080_** |            0.112 |        **_0.33_** |              4.57 |      **_0.12_** |               2.13 |       **_0.17_** | **_252.9_** |       12.0 |          10.0 |         117.8 |
+|    mtxdb    |   full    |           289.7 |          0.493 |            0.549 |              0.47 |              5.59 |      **_0.12_** |               2.17 |       **_0.17_** | **_252.9_** |       12.0 |           9.8 |         113.7 |
+|    mdbx     |    n/a    |           963.8 |          0.771 |            0.747 |              0.74 |             27.55 |            1.43 |               2.18 |             0.78 |       448.0 |    in-file |           1.9 |         445.4 |
+|   sqlite    |    n/a    |          7107.3 |          0.101 |      **_0.109_** |             29.51 |             42.79 |            1.48 |              10.95 |             0.78 |       ~1126 |    in-file |     **_1.8_** |     **_3.6_** |
+| fjall (lsm) |    n/a    |          1001.1 |          6.177 |           11.594 |              4.36 |        **_2.08_** |            1.49 |         **_0.54_** |             0.39 |       280.4 |    in-file |         275.4 |         275.4 |
 
 <!-- markdownlint-enable MD013 -->
+
+Topology asymmetry: mtxdb spreads batches over 32 collections; others use one
+partition/table. Compare memory with `RAM open/warm (PSS)`, not `Index (MB)`.
+SQLite disk printed as 1.1 GB in the capture; converted to ~1126 MB.
 
 #### ── At 0.5 GB ─────────────────────────────────────────────────────────────
 
 <!-- markdownlint-disable MD013 -->
 
-| Engine | CRC32 | Bulk write (ms) | Warm open (ms) | Check-point (ms) | Point lookup (μs) | First append (ms) | First sync (ms) | Steady append (ms) | Steady sync (ms) | Disk (MB) | Index (MB) | RAM open (MB) | RAM warm (MB) |
-| :----: | :---: | :-------------: | :------------: | :--------------: | :---------------: | :---------------: | :-------------: | :----------------: | :--------------: | :-------: | :--------: | :-----------: | :-----------: |
-| mtxdb  | none  |   **_542.6_**   |  **_0.085_**   |   **_0.116_**    |    **_0.34_**     |       10.14       |      0.13       |     **_0.54_**     |    **_0.13_**    | **_506_** | **_24.0_** |      1.9      |     113.9     |
-| mtxdb  | write |      567.3      |     0.086      |      0.128       |    **_0.34_**     |       10.11       |   **_0.12_**    |        0.57        |       0.14       | **_506_** | **_24.0_** |      2.0      |     113.9     |
-| mtxdb  | full  |      563.5      |     0.947      |      0.928       |       0.50        |    **_10.03_**    |      0.14       |        0.59        |       0.14       | **_506_** | **_24.0_** |      9.9      |     113.8     |
-|  mdbx  |  n/a  |     3344.5      |     0.413      |      0.365       |       1.33        |       38.48       |      2.00       |        2.84        |       1.01       |    896    |   _n/a_    |   **_1.4_**   |     865.4     |
-| sqlite |  n/a  |     17195.1     |     0.116      |      0.184       |       36.92       |       55.11       |      1.50       |       13.82        |       0.92       |   2100    |   _n/a_    |      1.8      |   **_3.6_**   |
+|   Engine    |   CRC32   | Bulk write (ms) | Warm open (ms) | Check-point (ms) | Point lookup (μs) | First append (ms) | First sync (ms) | Steady append (ms) | Steady sync (ms) |   Disk (MB) | Index (MB) | RAM open (MB) | RAM warm (MB) |
+| :---------: | :-------: | --------------: | -------------: | ---------------: | ----------------: | ----------------: | --------------: | -----------------: | ---------------: | ----------: | ---------: | ------------: | ------------: |
+|    mtxdb    |   none    |     **_592.8_** |          0.087 |            0.124 |        **_0.33_** |              7.84 |      **_0.12_** |               4.17 |             0.19 | **_505.8_** |       24.0 |           9.6 |         121.6 |
+|    mtxdb    | writeonly |           615.0 |    **_0.082_** |            0.112 |        **_0.33_** |              7.36 |      **_0.12_** |               4.16 |             0.19 | **_505.8_** |       24.0 |           2.5 |         114.4 |
+|    mtxdb    |   full    |           606.4 |          0.919 |            0.943 |              0.48 |              7.55 |            0.16 |               4.00 |       **_0.18_** | **_505.8_** |       24.0 |          10.5 |         114.4 |
+|    mdbx     |    n/a    |          2636.3 |          1.146 |            1.111 |              0.98 |             36.67 |            1.51 |               2.40 |             0.81 |       896.0 |    in-file |     **_1.8_** |         863.0 |
+|   sqlite    |    n/a    |         15453.9 |          0.105 |      **_0.108_** |             32.54 |             46.12 |            1.26 |              11.46 |             0.77 |       ~2150 |    in-file |     **_1.8_** |     **_3.6_** |
+| fjall (lsm) |    n/a    |          2022.5 |         12.101 |           24.654 |              4.33 |        **_2.37_** |            1.69 |         **_0.57_** |             0.41 |       528.8 |    in-file |         540.9 |         540.9 |
 
 <!-- markdownlint-enable MD013 -->
+
+Topology asymmetry: mtxdb spreads batches over 32 collections; others use one
+partition/table. Compare memory with `RAM open/warm (PSS)`, not `Index (MB)`.
+SQLite disk printed as 2.1 GB in the capture; converted to ~2150 MB.
 
 #### ── At 1.0 GB ─────────────────────────────────────────────────────────────
 
 <!-- markdownlint-disable MD013 -->
 
-| Engine | CRC32 | Bulk write (ms) | Warm open (ms) | Check-point (ms) | Point lookup (μs) | First append (ms) | First sync (ms) | Steady append (ms) | Steady sync (ms) | Disk (MB)  | Index (MB) | RAM open (MB) | RAM warm (MB) |
-| :----: | :---: | :-------------: | :------------: | :--------------: | :---------------: | :---------------: | :-------------: | :----------------: | :--------------: | :--------: | :--------: | :-----------: | :-----------: |
-| mtxdb  | none  |  **_1116.1_**   |     0.093      |      0.132       |       0.39        |       16.68       |   **_0.12_**    |     **_0.72_**     |    **_0.12_**    | **_1012_** | **_48.0_** |     13.9      |     133.9     |
-| mtxdb  | write |     1190.1      |  **_0.091_**   |      0.125       |    **_0.35_**     |       16.76       |   **_0.12_**    |        0.74        |    **_0.12_**    | **_1012_** | **_48.0_** |     13.9      |     133.8     |
-| mtxdb  | full  |     1197.3      |     1.977      |      2.255       |       0.53        |    **_16.27_**    |   **_0.12_**    |        0.75        |       0.13       | **_1012_** | **_48.0_** |     30.0      |     133.9     |
-|  mdbx  |  n/a  |     24620.3     |     0.372      |      0.370       |       1.46        |       63.15       |      1.72       |        2.90        |       0.93       |    1700    |   _n/a_    |      3.1      |     1400      |
-| sqlite |  n/a  |     36968.1     |     0.118      |   **_0.113_**    |       37.52       |       52.71       |      1.66       |       13.96        |       0.90       |    4300    |   _n/a_    |   **_1.8_**   |   **_3.6_**   |
+|   Engine    |   CRC32   | Bulk write (ms) | Warm open (ms) | Check-point (ms) | Point lookup (μs) | First append (ms) | First sync (ms) | Steady append (ms) | Steady sync (ms) |    Disk (MB) | Index (MB) | RAM open (MB) | RAM warm (MB) |
+| :---------: | :-------: | --------------: | -------------: | ---------------: | ----------------: | ----------------: | --------------: | -----------------: | ---------------: | -----------: | ---------: | ------------: | ------------: |
+|    mtxdb    |   none    |    **_1428.6_** |          0.095 |            0.125 |              0.35 |             15.22 |      **_0.12_** |               9.46 |       **_0.18_** | **_1011.6_** |       48.0 |           5.3 |         125.3 |
+|    mtxdb    | writeonly |          1481.3 |    **_0.094_** |            0.129 |        **_0.34_** |             13.06 |      **_0.12_** |               8.57 |       **_0.18_** | **_1011.6_** |       48.0 |          26.4 |         146.3 |
+|    mtxdb    |   full    |          1510.8 |          1.732 |            1.828 |              0.49 |             11.55 |      **_0.12_** |               8.52 |       **_0.18_** | **_1011.6_** |       48.0 |          45.4 |         149.3 |
+|    mdbx     |    n/a    |         22029.2 |          1.886 |            1.882 |              1.35 |             63.44 |            1.76 |               2.75 |             0.86 |        ~1741 |    in-file |     **_1.8_** |          1434 |
+|   sqlite    |    n/a    |         33834.6 |          0.126 |      **_0.109_** |             34.11 |             49.17 |            1.46 |              12.57 |             0.84 |        ~4403 |    in-file |     **_1.8_** |     **_3.7_** |
+| fjall (lsm) |    n/a    |          4248.5 |         23.916 |           26.494 |              4.40 |        **_1.28_** |            0.90 |         **_0.32_** |             0.23 |        ~1024 |    in-file |          1126 |          1126 |
 
 <!-- markdownlint-enable MD013 -->
 
+Topology asymmetry: mtxdb spreads batches over 32 collections; others use one
+partition/table. Compare memory with `RAM open/warm (PSS)`, not `Index (MB)`. GB
+displays in the capture converted to MB (×1024, rounded): mdbx disk ~1741 and
+RAM warm ~1434, fjall disk ~1024 and RAM ~1126, sqlite disk ~4403.
+
 ---
 
-`none` disables frame CRC32 generation and read verification; `write` retains
-frame CRCs but skips their read-time verification; `full` verifies frame CRCs on
-every read. The benchmark keeps checkpoint CRCs written in every mode, but skips
-their open-time verification for `none` and `write`. libmdbx and SQLite have no
-equivalent engine-level read-time checksum sweep in this benchmark. Across this
-0.0625–1.0 GB sweep, even the default `full` mode writes the initial data set
-faster and uses less disk space than the other tested engines. Its explicit
-in-memory index grows with the data set; mdbx and SQLite keep their index
-structures in their database files. The first-append path is faster for mtxdb at
-every sampled size. These figures need repeated controlled measurements with
-representative Matrix data before supporting a broader claim.
+`none` disables frame and checkpoint CRC32 generation and verification (fastest,
+least safe); `writeonly` writes CRCs but skips their read-time verification;
+`full` verifies frame CRCs on every read and is the engine's actual default.
+libmdbx, SQLite, and Fjall have no equivalent engine-level read-time checksum
+sweep in this benchmark. Across this 0.0625–1.0 GB capture, even the default
+`full` mode writes the initial data set faster than libmdbx, SQLite, and Fjall
+and uses less disk than every other engine at every size. Its explicit in-memory
+index grows with the data set; mdbx and SQLite keep their index structures in
+their database files, and SQLite holds the lowest PSS in every table. On first
+append, mtxdb beats MDBX and SQLite at every sampled size; against Fjall it is
+mixed — Fjall is faster at 0.125–1.0 GB, while the repeated 0.0625 GB sample
+split (Fjall 1.57 ms first run vs 2.24 ms repeat, mtxdb ~1.65 ms), so neither
+engine owns that cell. Fjall wins steady-append at every size. These figures
+need repeated controlled measurements with representative Matrix data before
+supporting a broader claim.
+
+The publishable reading so far: append-only writes and persisted-index reopen
+look promising on this HDD benchmark; graph-locality benefits remain to be
+measured on real Matrix histories.
 
 ### What mtxdb buys you
 
 <!-- markdownlint-disable MD013 -->
 
-| Operation        | B-tree (Synapse)    | mtxdb                                                   |
-| ---------------- | ------------------- | ------------------------------------------------------- |
-| Point lookup     | Tree traversal      | `O(1)` index probe + record read                        |
-| State resolution | Often scattered I/O | Can be near-sequential after a workload-specific repack |
-| Event ingestion  | Read-modify-write   | Append-only                                             |
-| GC               | Tombstone + compact | Reachability repack                                     |
-| Crash recovery   | WAL replay          | Validate checkpoints or rescan shard frames             |
+| Operation        | B-tree (Synapse)    | mtxdb                                                                      |
+| ---------------- | ------------------- | -------------------------------------------------------------------------- |
+| Point lookup     | Tree traversal      | `O(1)` index probe + record read                                           |
+| State resolution | Often scattered I/O | Hypothesized near-sequential after a workload-specific repack (unmeasured) |
+| Event ingestion  | Read-modify-write   | Append-only                                                                |
+| GC               | Tombstone + compact | Caller-scheduled reachability repack                                       |
+| Crash recovery   | WAL replay          | Validate checkpoints or rescan shard frames                                |
 
 <!-- markdownlint-enable MD013 -->
 
@@ -538,7 +606,8 @@ become linear scans with zero PDU reads.
 ## Roadmap
 
 Implemented so far: packfile format, lossy fanout index, `StorageEngine` trait,
-`NodeCache`, topological repacker.
+`NodeCache`, caller-scheduled topological repacker (`needs_repack` is exposed;
+no background worker polls it yet).
 
 Not built:
 
@@ -551,22 +620,18 @@ Not built:
   transactional WAL design.
 - **Segment/bulk queries** beyond `get_many()`.
 - **A RocksDB benchmark.** The external benchmark currently covers mtxdb,
-  libmdbx, and SQLite. Any claim about RocksDB remains unverified.
+  libmdbx, SQLite, and Fjall. Any claim about RocksDB remains unverified.
 
 ---
 
 mtxdb is early — the `StorageEngine` trait and packfile format are implemented,
-the lossy index is tested, and the repack manager handles atomic swaps. The
-repository is at
+the lossy index is tested, and the caller-scheduled repack handles atomic index
+swaps. The repository is at
 [github.com/Wombat-Foundation/mtxdb](https://github.com/Wombat-Foundation/mtxdb).
 
-### Footnotes and sources consulted
+### Sources consulted
 
-[^ssd_random]: "SSD sequential versus random read speeds" (Blog post).
-
-    > _That Gen 4 NVMe SSD with 7,000 MB/s on the box? When your operating
-    > system is booting and reading thousands of small scattered files, it's
-    > effectively operating at around 70–80 MB/s — roughly 1% of its advertised
-    > headline speed._
-
-    <https://www.oscooshop.com/blogs/blogs/ssd-sequential-vs-random-speed>
+General vendor spec sheets and independent storage benchmarks (with stated
+workload, queue depth, and block size) for sequential vs. random I/O magnitudes.
+The sequential-vs-random table above is illustrative, not a measurement of this
+workload.
