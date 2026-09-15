@@ -1,10 +1,12 @@
 ---
-title: "[DRAFT] mtxdb: A write-once packfile storage engine for Matrix"
+title: "mtxdb: pure sequential I/O, beats fjall and mdbx"
 date: "2026-09-05"
-description: "Making Matrix possible on spinning disks."
-subtitle: "An append-only, content-addressed store for Matrix state."
+description:
+  "Run Synapse on spinning HDDs. Pure sequential I/O, inspired by MDBX,
+  BadgerDB, and WiscKey."
+subtitle: "Sequential DB, inspired by MDBX, BadgerDB, and WiscKey."
 tags: ["Matrix", "Storage", "Performance"]
-draft: true
+draft: false
 ---
 
 Matrix homeservers can store gigabytes of room data. The event DAG for a busy
@@ -67,12 +69,12 @@ enormous, even on modern hardware.
 
 <!-- markdownlint-disable MD013 -->
 
-| Drive Type     | Sequential Read | Random 4K Read | Gap   |
-| -------------- | --------------- | -------------- | ----- |
-| Gen 5 NVMe SSD | ~13,000 MB/s    | ~80–100 MB/s   | ~140× |
-| Gen 4 NVMe SSD | ~7,000 MB/s     | ~70–80 MB/s    | ~90×  |
-| SATA SSD       | ~550 MB/s       | ~40–50 MB/s    | ~12×  |
-| HDD            | ~150 MB/s       | ~0.5–1 MB/s    | ~200× |
+| Drive Type     | Sequential Read | Random 4K Read   | Gap   |
+| -------------- | --------------- | ---------------- | ----- |
+| Gen 5 NVMe SSD | ~13,000 MB/s    | **~80–100 MB/s** | ~140× |
+| Gen 4 NVMe SSD | ~7,000 MB/s     | ~70–80 MB/s      | ~90×  |
+| SATA SSD       | ~550 MB/s       | ~40–50 MB/s      | ~12×  |
+| HDD            | **~150 MB/s**   | ~0.5–1 MB/s      | ~200× |
 
 <!-- markdownlint-enable MD013 -->
 
@@ -81,7 +83,8 @@ workload reads thousands of small, scattered files. The drive is not broken:
 sequential bandwidth and random-I/O throughput are different measurements, and
 the latter also depends on queue depth, block size, firmware, and the host.
 
-([Source](https://www.oscooshop.com/blogs/blogs/ssd-sequential-vs-random-speed))
+The sequential-versus-random figures are summarized from a comparative drive
+benchmark.[^ssd_random]
 
 The core hypothesis is that a large share of historical nodes is unreachable
 from a workload's chosen roots. If the reachable closure is small and the
@@ -541,8 +544,8 @@ Not built:
 
 - **POPCOUNT-indexed HAMT/CHAMP trie.** The index above is a flat hash table —
   no bitmap, no `count_ones()`. The real thing (bitmap child-index, `O(1)`
-  descent) exists as a proof of concept in a sibling project; needs its own
-  crate before mtxdb can depend on it.
+  descent) exists as a proof of concept in a sibling project, `rezzy`; needs its
+  own crate before mtxdb can depend on it.
 - **WAL, transactions, snapshots, backups, repair.** The current durability path
   syncs dirty shards and persists index checkpoint/delta metadata; it is not a
   transactional WAL design.
@@ -556,3 +559,14 @@ mtxdb is early — the `StorageEngine` trait and packfile format are implemented
 the lossy index is tested, and the repack manager handles atomic swaps. The
 repository is at
 [github.com/Wombat-Foundation/mtxdb](https://github.com/Wombat-Foundation/mtxdb).
+
+### Footnotes and sources consulted
+
+[^ssd_random]: "SSD sequential versus random read speeds" (Blog post).
+
+    > _That Gen 4 NVMe SSD with 7,000 MB/s on the box? When your operating
+    > system is booting and reading thousands of small scattered files, it's
+    > effectively operating at around 70–80 MB/s — roughly 1% of its advertised
+    > headline speed._
+
+    <https://www.oscooshop.com/blogs/blogs/ssd-sequential-vs-random-speed>
