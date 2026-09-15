@@ -12,20 +12,20 @@ involve read-modify-write cycles and random I/O that are especially costly on
 spinning disks.
 
 [mtxdb](https://github.com/Wombat-Foundation/mtxdb) takes the opposite approach:
-**never mutate records, never delete records, never tombstone records.** Every
-node is content-addressed and appended once. Garbage collection is a background
-repack that rewrites only reachable data in a chosen traversal order. The result
-is a storage engine with constant-time _in-memory_ index probes and a layout
-that can make selected graph walks much more sequential.
+**never mutate individual records.** New records are appended; a collection can
+be deleted logically, and physical space is reclaimed by a background repack
+that rewrites reachable data in a chosen traversal order. The result is a
+storage engine with constant-time _in-memory_ index probes and a layout that can
+make selected graph walks much more sequential.
 
 Custom binary format, inspired by `libmdbx` and `LeanStore` (also `SplinterDB`,
 `Fjall`, `git-repack`, and `PGM-index` — the last one mostly as a
 counterexample; a learned index over uniformly random hashes degenerates to the
-flat fanout table below, so that's just what's built). Compile times under 3
-seconds. One `unsafe` block in the whole crate, for `mmap2` — reads make
-effectively zero syscalls, mapped straight to their offset by the index below.
-An index probe takes a few memory operations; a cache miss still pays for the
-record read. The cache makes repeated accesses cheap, not literally free.
+flat fanout table below, so that's just what's built). The core crate isolates
+one `unsafe` block for `memmap2`; after a shard is mapped, steady-state reads
+can access its bytes without a read syscall. An index probe takes a few memory
+operations; a cache miss still pays for the record read. The cache helps writes
+and swizzled nodes, rather than turning every cold lookup into an LRU entry.
 
 The POPCOUNT-indexed HAMT trie, WAL, transactions, and snapshots aren't built
 yet — see [Roadmap](#roadmap).
@@ -66,8 +66,8 @@ enormous, even on modern hardware.
 
 | Drive Type     | Sequential Read | Random 4K Read | Gap   |
 | -------------- | --------------- | -------------- | ----- |
-| Gen 4 NVMe SSD | ~7,000 MB/s     | ~70–80 MB/s    | ~90×  |
 | Gen 5 NVMe SSD | ~13,000 MB/s    | ~80–100 MB/s   | ~140× |
+| Gen 4 NVMe SSD | ~7,000 MB/s     | ~70–80 MB/s    | ~90×  |
 | SATA SSD       | ~550 MB/s       | ~40–50 MB/s    | ~12×  |
 | HDD            | ~150 MB/s       | ~0.5–1 MB/s    | ~200× |
 
@@ -89,17 +89,21 @@ order.
 
 ## Packfile format
 
-mtxdb stores nodes in per-room packfiles. Each packfile is an append-only log of
-framed records:
+mtxdb stores nodes in a global pool of shared, append-only shard files. Each
+frame carries its collection (room) ID, so a shard can contain records from many
+rooms while each room retains its own logical index:
 
 ```text
 [MAGIC: "MDB1"] [version: 0x01]
 
 Record 0:
-  [u32 len]       — byte length of (hash ++ node_bytes), little-endian
+  [u32 len]       — byte length through node bytes, little-endian
+  [u8 flags]      — compression flags
+  [u32 raw len]   — original payload length
+  [16-byte room]  — collection ID (for shard-scan recovery)
   [16-byte hash]  — structural hash (index-rebuild metadata only)
   [node bytes]    — opaque node payload
-  [u32 crc32]     — CRC32 covering len + hash + node_bytes
+  [u32 crc32]     — CRC32 covering all preceding frame fields
 
 Record 1:
   ...
@@ -107,51 +111,54 @@ Record 1:
 
 The design choices:
 
-- **Content-addressed**: the 16-byte structural hash is computed from the node
-  bytes. Identical data always produces the same hash, so deduplication is free
-  — just don't insert duplicates.
+- **Caller-supplied structural IDs**: the API accepts a 16-byte node ID with
+  each write and records it as index-rebuild metadata. The caller is responsible
+  for deriving that ID and avoiding duplicate inserts; the storage engine does
+  not calculate it from the payload.
 
-- **CRC32 per record**: each frame carries a checksum. A torn write or disk
-  sector error is detected instantly during scan, and the packfile truncates at
-  the last good record.
+- **CRC32 per record**: each frame carries a checksum. A scan detects a torn
+  write or disk-sector error; recovery can truncate a torn tail at the last good
+  record.
 
-- **No deltas, no compression**: every record stores the full node bytes. This
-  trades space for access simplicity — no delta chain traversal, no zlib
-  inflation. On Matrix's state nodes (typically 200-2000 bytes each), the
-  compression ratio is poor anyway.
+- **No payload deltas; opportunistic compression**: every record is
+  self-contained, so reading a node never needs a data-delta chain traversal.
+  The writer may use zstd only when it makes a frame smaller; otherwise it
+  stores the payload raw. Separately, `index.delta` appends fixed-width index
+  updates between full checkpoint rewrites.
 
-- **Records are immutable once written**: the active packfile grows by appending
-  complete frames; existing frames are never changed. Readers hold an
-  `Arc<PackGeneration>` for the duration of a traversal. The repacker writes a
-  new, complete pack, fsyncs it, renames it atomically, then swaps the room's
-  pointer via `ArcSwap`. The old pack is unlinked when the last reader releases
-  its `Arc`.
+- **Records are immutable once written**: active shards grow by appending
+  complete frames; existing frames are never changed. Each room's immutable
+  index/cache generation is published through `ArcSwap`. A repack copies its
+  live frames into destination shards, publishes a replacement index, and only
+  retires a source shard once no room still references it.
 
 The `Record` struct in Rust:
 
 ```rust
 pub struct Record {
+    pub collection_id: [u8; 16],
     pub hash: [u8; 16],
     pub data: Bytes,
 }
 ```
 
-The frame on disk is `len(u32) + hash([u8;16]) + data(Bytes) + crc32(u32)`.
-Total overhead per record: 24 bytes of framing. For a typical 500-byte HAMT
-node, that is 4.8% overhead.
+The frame on disk is
+`len + flags + raw_len + collection_id + hash + data + crc32`: 45 bytes of
+framing before any optional compression. For a typical 500-byte HAMT node, that
+is about 9% overhead.
 
 ## The lossy fanout index
 
-The packfile is the durable store; the index is the fast path. Each room gets a
-`LossyIndex` — a flat, power-of-two sized table of 64-bit slots:
+The shared shard pool is the durable store; the index is the fast path. Each
+room gets a `LossyIndex` — a flat, power-of-two sized table of 64-bit slots:
 
 ```text
-┌─────────────────────────────────────────────────────────┐
-│ IndexSlot (u64)                                         │
-├──────────────┬──────────┬───────────────────────────────┤
-│ tag (24 bit) │ pack (8) │ offset (32 bit)               │
-│ fingerprint  │ pack id  │ byte offset within the pack   │
-└──────────────┴──────────┴───────────────────────────────┘
+┌────────────────────────────────────────────────────────────┐
+│ IndexSlot (u64)                                            │
+├──────────────┬───────────────┬─────────────────────────────┤
+│ tag (24 bit) │ shard (12 bit)│ offset (28 bit)             │
+│ fingerprint  │ shard ID      │ byte offset within shard    │
+└──────────────┴───────────────┴─────────────────────────────┘
 ```
 
 The slot is a single `u64`. Lookup is a single memory access — no pointer
@@ -176,7 +183,7 @@ matching tag adds no discrimination within a probe run. When probing:
 
 1. Compute bucket from hash.
 2. Read the slot. If empty, the key is absent — **empty terminates the probe**.
-3. If the tag matches, return the `(pack_id, offset)` as a candidate.
+3. If the tag matches, return the `(shard_id, offset)` as a candidate.
 4. Advance to the next bucket (linear probing).
 
 The caller then verifies the candidate by reading the record from disk and
@@ -202,30 +209,31 @@ The index is lossy because:
 
 ### Memory cost
 
-At 8 bytes per slot, a 1000-node room with a 2048-slot index costs 16KB. A
-server with 100 active rooms costs 1.6MB total. The index for every room
-combined fits in L2 cache.
+The raw slot is 8 bytes; the live index also carries its synchronization and
+growth bookkeeping. Index memory therefore scales with the nodes in each active
+room, rather than with the number of shared shard files.
 
 ### Slot layout efficiency
 
 The 64-bit slot packs three fields with zero wasted bits:
 
-| Field  | Bits | Range | Purpose                     |
-| ------ | ---- | ----- | --------------------------- |
-| tag    | 24   | 0–16M | Fast rejection (0 = empty)  |
-| pack   | 8    | 0–255 | Which pack generation       |
-| offset | 32   | 0–4GB | Byte offset within the pack |
+| Field  | Bits | Range    | Purpose                        |
+| ------ | ---- | -------- | ------------------------------ |
+| tag    | 24   | 0–16M    | Fast rejection (0 = empty)     |
+| shard  | 12   | 0–4095   | Which shared shard contains it |
+| offset | 28   | ~0–256MB | Byte offset within the shard   |
 
-This addresses 256 packs × 4GB each = 1TB per room. Empty slots are all-zeros,
-and since hash values are uniformly random, the probability of a legitimate hash
-mapping to tag 0 is 1/16M — indistinguishable from "not present" in practice.
+The pool can address 4,096 shards of just under 256 MiB each — about 1 TiB in
+total. Empty slots are all-zeros, and since hash values are uniformly random,
+the probability of a legitimate hash mapping to tag 0 is 1/16M —
+indistinguishable from "not present" in practice.
 
 ## Topological repack
 
-The packfile is append-only, but the insertion order doesn't match the read
-order. Events arrive out of order from federation, backfill fetches history in
-reverse-chronological batches, and late-arriving events land at the tail. The
-packfile on disk is a jumble of chronological positions.
+The shared shards are append-only, but a room's insertion order doesn't match
+its read order. Events arrive out of order from federation, backfill fetches
+history in reverse-chronological batches, and late-arriving events land at the
+tail. A room's records can therefore be physically scattered through the pool.
 
 The repacker fixes this. It runs in the background during idle periods and does
 for mtxdb what `git gc` does for Git: rewrites reachable data in traversal order
@@ -234,27 +242,28 @@ and reclaims garbage.
 ### The algorithm
 
 1. **Walk the DAG** from the current root using BFS. The resolver function
-   returns `(node_data, child_hashes)` for each hash encountered.
+   returns `(node_data, child_hashes)` for each hash encountered, then derives a
+   topological ordering for the copied live set.
 
-2. **Write a new packfile** with nodes in BFS traversal order. The late-arriving
-   backfilled event that was stuck at the end of the old file is now physically
-   written right next to its historical parents.
+2. **Copy live nodes into destination shards** in topological traversal order.
+   The late-arriving backfilled event that was physically distant from its
+   historical parents is written near them in the replacement output.
 
-3. **Atomic swap**: fsync the new pack, rename it over the old path, then swap
-   the room's `Arc<PackGeneration>` via `ArcSwap`. The old pack is unlinked when
-   the last reader releases.
+3. **Atomic index swap**: fsync the dirty destination shards, then publish the
+   room's replacement index via `ArcSwap`. A source shard is retired only after
+   every room that references it has moved away.
 
-4. **GC for free**: nodes that are unreachable from the current root are simply
-   not copied. A room with 4.5M accumulated HAMT nodes but only 1K reachable
-   nodes reclaims 99.98% of the pack.
+4. **Logical GC**: nodes unreachable from the current root are simply not
+   copied. A room with 4.5M accumulated HAMT nodes but only 1K reachable nodes
+   drops 99.98% of its logical contents; physical space becomes reclaimable when
+   no room still references the source shards.
 
 ### Why this works
 
 Content-addressing makes this trivially correct. The repacker doesn't need to
-know what a node contains — it just follows hashes. If two rooms share a node
-(the same HAMT subtree appears in both), the node is reachable from both roots
-and will be copied into both repacked files. Deduplication across rooms happens
-naturally.
+know what a node contains — it just follows hashes. Repacking is logically
+per-room, even though its physical destination shards are shared; a batch repack
+can compact several rooms through one output stream.
 
 ### The branching caveat
 
@@ -279,25 +288,31 @@ pub trait StorageEngine: Send + Sync {
         -> Result<Option<NodeData>, StorageError>;
     fn get_many(&self, room_id: &[u8; 16], ids: &[NodeId])
         -> Result<Vec<Option<NodeData>>, StorageError>;
+
     fn put(&self, room_id: &[u8; 16], id: &NodeId, data: &NodeData)
         -> Result<(), StorageError>;
     fn put_many(&self, room_id: &[u8; 16], entries: &[(NodeId, NodeData)])
         -> Result<(), StorageError>;
-    fn delete_room(&self, room_id: &[u8; 16])
+
+    fn delete_collection(&self, room_id: &[u8; 16])
         -> Result<(), StorageError>;
+
     fn sync(&self) -> Result<(), StorageError>;
+
+    fn refresh_collection(&self, room_id: &[u8; 16])
+        -> Result<(), StorageError>;
 }
 ```
 
 Every operation is scoped to a single room. The caller always knows which room a
 node belongs to; the engine uses this to select the correct per-room index and
-packfile. This keeps each room's active index at ~8KB — 100 active rooms cost
-less than 1MB total.
+cache, then follows its slot to a shared shard. This keeps each room's active
+index separate while the physical files are pooled.
 
 The `PackfileStorage` implementation holds:
 
 - A `LossyIndex` per room (in-memory, 64-bit slots).
-- A `PackGeneration` per room (the current packfile on disk).
+- One shared `ShardPool` (the append-only files on disk).
 - A `NodeCache` for recently accessed nodes (avoids repeated disk reads).
 
 The `InMemoryStorage` implementation is a `HashMap<NodeId, NodeData>` for tests.
@@ -403,15 +418,17 @@ directly relevant comparison.
 
 <!-- markdownlint-enable MD013 -->
 
-`none` disables both frame and checkpoint CRC32 checks; `write` writes CRCs but
-does not re-verify them on reads; `full` verifies them on every read. libmdbx
-and SQLite have no equivalent engine-level read-time checksum sweep in this
-benchmark. Across this 0.0625–1.0 GB sweep, even the default `full` mode writes
-the initial data set faster and uses less disk space than the other tested
-engines. Its explicit in-memory index grows with the data set; mdbx and SQLite
-keep their index structures in their database files. The first-append path is
-faster for mtxdb at every sampled size. These figures need repeated controlled
-measurements with representative Matrix data before supporting a broader claim.
+`none` disables frame CRC32 generation and read verification; `write` retains
+frame CRCs but skips their read-time verification; `full` verifies frame CRCs on
+every read. The benchmark keeps checkpoint CRCs written in every mode, but skips
+their open-time verification for `none` and `write`. libmdbx and SQLite have no
+equivalent engine-level read-time checksum sweep in this benchmark. Across this
+0.0625–1.0 GB sweep, even the default `full` mode writes the initial data set
+faster and uses less disk space than the other tested engines. Its explicit
+in-memory index grows with the data set; mdbx and SQLite keep their index
+structures in their database files. The first-append path is faster for mtxdb at
+every sampled size. These figures need repeated controlled measurements with
+representative Matrix data before supporting a broader claim.
 
 ### What mtxdb buys you
 
@@ -419,11 +436,11 @@ measurements with representative Matrix data before supporting a broader claim.
 
 | Operation        | B-tree (Synapse)    | mtxdb                                                   |
 | ---------------- | ------------------- | ------------------------------------------------------- |
-| Point lookup     | Tree traversal      | O(1) index probe + record read                          |
+| Point lookup     | Tree traversal      | `O(1)` index probe + record read                        |
 | State resolution | Often scattered I/O | Can be near-sequential after a workload-specific repack |
 | Event ingestion  | Read-modify-write   | Append-only                                             |
 | GC               | Tombstone + compact | Reachability repack                                     |
-| Crash recovery   | WAL replay          | Scan last good rec                                      |
+| Crash recovery   | WAL replay          | Validate checkpoints or rescan shard frames             |
 
 <!-- markdownlint-enable MD013 -->
 
@@ -443,9 +460,11 @@ measurements with representative Matrix data before supporting a broader claim.
   room. At a controlled load factor, that remains negligible; it should still be
   counted in benchmark instrumentation.
 
-- **Per-room file proliferation**: each room gets its own pack set. A server in
-  10K rooms needs 10K+ files. Mitigate with an LRU'd fd cache and a shared
-  small-rooms pack for rooms below a size threshold.
+- **Shared-shard coupling**: physical files and file descriptors scale with the
+  number of shards, not directly with room count. That avoids a file per room,
+  but rooms that share a source shard can make retirement and physical
+  compaction a multi-room operation. Per-room indexes and caches still grow with
+  the active-room count.
 
 ### The measurement gate
 
@@ -471,9 +490,10 @@ Not built:
   no bitmap, no `count_ones()`. The real thing (bitmap child-index, `O(1)`
   descent) exists as a proof of concept in a sibling project; needs its own
   crate before mtxdb can depend on it.
-- **WAL, transactions, snapshots, backups, repair.** Durability today is
-  fsync-pack, fsync-rename. That's it.
-- **Segment/bulk queries** beyond `get_many`.
+- **WAL, transactions, snapshots, backups, repair.** The current durability path
+  syncs dirty shards and persists index checkpoint/delta metadata; it is not a
+  transactional WAL design.
+- **Segment/bulk queries** beyond `get_many()`.
 - **A RocksDB benchmark.** The external benchmark currently covers mtxdb,
   libmdbx, and SQLite. Any claim about RocksDB remains unverified.
 
