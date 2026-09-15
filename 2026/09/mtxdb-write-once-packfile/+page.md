@@ -329,43 +329,74 @@ Seagate ST4000NM0115 SATA HDD. The system volume was a 256 GB Crucial MX300 SATA
 SSD. Filesystem, library-version, durability-setting, and cache-state details
 also matter when reproducing the results.
 
-The command ran each size once, testing all three mtxdb checksum modes. `full`
-is mtxdb's default and is the directly relevant comparison.
+One invocation swept 0.125, 0.25, 0.5, and 1.0 GB, testing all three mtxdb
+checksum modes at each size. `full crc32` is mtxdb's default and is the directly
+relevant comparison.
+
+At 0.125 GB:
 
 <!-- markdownlint-disable MD013 -->
 
 | Engine | CRC32 | Bulk write (ms) | Warm open (ms) | Check-point (ms) | Point lookup (μs) | First append (ms) | First sync (ms) | Steady append (ms) | Steady sync (ms) | Disk (MB) | Index (MB) | RAM open (MB) | RAM warm (MB) |
 | ------ | ----- | --------------- | -------------- | ---------------- | ----------------- | ----------------- | --------------- | ------------------ | ---------------- | --------- | ---------- | ------------- | ------------- |
-| mtxdb  | none  | 99.8            | 0.079          | 0.127            | 0.30              | 29.13             | 3.91            | 0.44               | 0.12             | 100.6     | 3.0        | 5.8           | 106.3         |
-| mtxdb  | write | 104.6           | 0.080          | 0.110            | 0.31              | 28.44             | 3.84            | 0.49               | 0.14             | 100.6     | 3.0        | 5.8           | 106.3         |
-| mtxdb  | full  | 109.7           | 0.201          | 0.274            | 0.49              | 28.20             | 3.72            | 0.46               | 0.12             | 100.6     | 3.0        | 6.7           | 106.3         |
-| mdbx   | n/a   | 336.4           | 0.537          | 0.515            | 0.55              | 9.21              | 1.36            | 1.81               | 0.73             | 192.0     | _embedded_ | 1.5           | 179.5         |
-| sqlite | n/a   | 2689.8          | 0.103          | 0.112            | 29.22             | 42.35             | 1.37            | 10.54              | 0.87             | 436.6     | _embedded_ | 1.8           | 3.6           |
+| mtxdb  | none  | 141.0           | 0.081          | 0.123            | 0.37              | 4.01              | 0.12            | 0.56               | 0.18             | 127       | 6.0        | 3.5           | 109.4         |
+| mtxdb  | write | 156.9           | 0.081          | 0.108            | 0.36              | 3.82              | 0.13            | 0.49               | 0.14             | 127       | 6.0        | 3.4           | 109.4         |
+| mtxdb  | full  | 143.1           | 0.286          | 0.358            | 0.51              | **_3.17_**        | 0.11            | 0.46               | 0.13             | 127       | 6.0        | 7.7           | 111.7         |
+| mdbx   | n/a   | 473.0           | 0.587          | 0.570            | 0.64              | 20.13             | 1.47            | 2.01               | 0.79             | 224       | _n/a_      | 1.4           | 223.4         |
+| sqlite | n/a   | 3760.9          | 0.118          | 0.126            | 31.12             | 53.03             | 1.68            | 12.61              | 1.05             | 546       | _n/a_      | 1.8           | 3.6           |
 
 <!-- markdownlint-enable MD013 -->
 
-At a 1 GB sample (`MTXDB_BENCH_EXT_GB=1`):
+At 0.25 GB:
 
 <!-- markdownlint-disable MD013 -->
 
-| Engine | CRC32 | Bulk write (ms) | Warm open (ms) | Checkpoint (ms) | Point lookup (μs) | First append (ms) | First sync (ms) | Steady append (ms) | Steady sync (ms) | Disk (GB) | Index (MB) | RAM open | RAM warm |
-| ------ | ----- | --------------- | -------------- | --------------- | ----------------- | ----------------- | --------------- | ------------------ | ---------------- | --------- | ---------- | -------- | -------- |
-| mtxdb  | none  | 1047.3          | 0.095          | 0.131           | 0.34              | 15.37             | 0.12            | 0.74               | 0.13             | 1.01      | 48.0       | 13.9     | 133.9    |
-| mtxdb  | write | 1150.3          | 0.097          | 0.133           | 0.34              | 15.17             | 0.12            | 0.73               | 0.12             | 1.01      | 48.0       | 14.0     | 133.8    |
-| mtxdb  | full  | 1113.8          | 2.028          | 1.845           | 0.50              | 14.72             | 0.12            | 0.74               | 0.13             | 1.01      | 48.0       | 29.9     | 133.9    |
-| mdbx   | n/a   | 26010.3         | 0.424          | 0.375           | 1.59              | 66.97             | 1.97            | 4.68               | 1.24             | 1.7       | _embedded_ | 5.4      | 1.4      |
-| sqlite | n/a   | 43397.7         | 0.127          | 0.128           | 43.69             | 58.80             | 1.61            | 15.24              | 1.13             | 4.3       | _embedded_ | 1.7      | 3.5      |
+| Engine | CRC32 | Bulk write (ms) | Warm open (ms) | Check-point (ms) | Point lookup (μs) | First append (ms) | First sync (ms) | Steady append (ms) | Steady sync (ms) | Disk (MB) | Index (MB) | RAM open (MB) | RAM warm (MB) |
+| ------ | ----- | --------------- | -------------- | ---------------- | ----------------- | ----------------- | --------------- | ------------------ | ---------------- | --------- | ---------- | ------------- | ------------- |
+| mtxdb  | none  | 294.4           | 0.082          | 0.115            | 0.37              | 6.29              | 0.12            | 0.53               | 0.13             | 253       | 12.0       | 2.6           | 110.4         |
+| mtxdb  | write | 286.0           | 0.082          | 0.112            | 0.34              | 6.52              | 0.12            | 0.56               | 0.14             | 253       | 12.0       | 2.6           | 110.5         |
+| mtxdb  | full  | 286.5           | 0.607          | 0.697            | 0.53              | 6.09              | 0.11            | 0.57               | 0.14             | 253       | 12.0       | 6.5           | 110.5         |
+| mdbx   | n/a   | 1047.2          | 0.764          | 0.766            | 0.82              | 26.44             | 1.67            | 2.91               | 1.28             | 448       | _n/a_      | 1.5           | 445.0         |
+| sqlite | n/a   | 8301.0          | 0.112          | 0.113            | 33.00             | 46.15             | 1.40            | 11.91              | 0.91             | 1100      | _n/a_      | 1.8           | 3.6           |
+
+<!-- markdownlint-enable MD013 -->
+
+At 0.5 GB:
+
+<!-- markdownlint-disable MD013 -->
+
+| Engine | CRC32 | Bulk write (ms) | Warm open (ms) | Check-point (ms) | Point lookup (μs) | First append (ms) | First sync (ms) | Steady append (ms) | Steady sync (ms) | Disk (MB) | Index (MB) | RAM open (MB) | RAM warm (MB) |
+| ------ | ----- | --------------- | -------------- | ---------------- | ----------------- | ----------------- | --------------- | ------------------ | ---------------- | --------- | ---------- | ------------- | ------------- |
+| mtxdb  | none  | 583.7           | 0.089          | 0.138            | 0.36              | 8.46              | 0.13            | 0.55               | 0.14             | 506       | 24.0       | 2.0           | 113.8         |
+| mtxdb  | write | 581.2           | 0.088          | 0.118            | 0.35              | 8.18              | 0.12            | 0.55               | 0.13             | 506       | 24.0       | 2.0           | 113.8         |
+| mtxdb  | full  | 616.5           | 1.084          | 1.046            | 0.51              | 7.86              | 0.12            | 0.56               | 0.13             | 506       | 24.0       | 9.9           | 113.8         |
+| mdbx   | n/a   | 2784.2          | 1.150          | 1.133            | 1.09              | 39.74             | 1.98            | 3.06               | 1.30             | 896       | _n/a_      | 1.5           | 862.7         |
+| sqlite | n/a   | 17640.8         | 0.110          | 0.120            | 35.15             | 54.25             | 1.57            | 14.00              | 1.03             | 2100      | _n/a_      | 1.8           | 3.6           |
+
+<!-- markdownlint-enable MD013 -->
+
+At 1.0 GB:
+
+<!-- markdownlint-disable MD013 -->
+
+| Engine | CRC32 | Bulk write (ms) | Warm open (ms) | Check-point (ms) | Point lookup (μs) | First append (ms) | First sync (ms) | Steady append (ms) | Steady sync (ms) | Disk      | Index   | RAM open | RAM warm |
+| ------ | ----- | --------------- | -------------- | ---------------- | ----------------- | ----------------- | --------------- | ------------------ | ---------------- | --------- | ------- | -------- | -------- |
+| mtxdb  | none  | 1089.3          | 0.094          | 0.128            | 0.34              | 16.29             | 0.13            | 0.75               | 0.14             | 1011.6 MB | 48.0 MB | 14.0 MB  | 133.8 MB |
+| mtxdb  | write | 1161.1          | 0.092          | 0.136            | 0.38              | 15.77             | 0.12            | 0.77               | 0.13             | 1011.6 MB | 48.0 MB | 13.9 MB  | 133.8 MB |
+| mtxdb  | full  | 1218.6          | 2.581          | 2.375            | 0.57              | 15.04             | 0.12            | 0.73               | 0.12             | 1011.6 MB | 48.0 MB | 29.9 MB  | 133.8 MB |
+| mdbx   | n/a   | 24349.2         | 1.936          | 1.900            | 1.52              | 66.24             | 1.90            | 2.94               | 0.95             | 1.7 GB    | _n/a_   | 4.1 MB   | 1.4 GB   |
+| sqlite | n/a   | 37936.4         | 0.113          | 0.127            | 38.42             | 58.65             | 1.47            | 14.21              | 0.95             | 4.3 GB    | _n/a_   | 1.9 MB   | 3.7 MB   |
 
 <!-- markdownlint-enable MD013 -->
 
 `none` disables both frame and checkpoint CRC32 checks; `write` writes CRCs but
 does not re-verify them on reads; `full` verifies them on every read. libmdbx
 and SQLite have no equivalent engine-level read-time checksum sweep in this
-benchmark. At both sizes, even the default `full` mode writes the initial data
-set faster and uses less disk space than the other tested engines. Its explicit
-in-memory index grows with the data set; mdbx and SQLite keep their index
-structures in their database files. The first-append path favors mdbx at 0.1 GB
-and mtxdb in this single 1 GB sample. These figures need repeated controlled
+benchmark. Across this 0.125–1.0 GB sweep, even the default `full` mode writes
+the initial data set faster and uses less disk space than the other tested
+engines. Its explicit in-memory index grows with the data set; mdbx and SQLite
+keep their index structures in their database files. The first-append path is
+faster for mtxdb at every sampled size. These figures need repeated controlled
 measurements with representative Matrix data before supporting a broader claim.
 
 ### What mtxdb buys you
