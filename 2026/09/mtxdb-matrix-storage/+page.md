@@ -406,9 +406,10 @@ Disk figures the harness printed in GB are converted to MB (×1024) and rounded.
 
 The harness also has a separate default 0.1 GB `make bench` target that is not
 part of this sweep capture; it is not shown here pending its own versioned
-capture. An earlier draft of this post showed a 0.1 GB table that mixed rows
-from different sweep sizes — that table has been removed for exactly that
-reason.
+capture. An earlier draft of this post showed a 0.1 GB table with two
+unexplained Fjall rows, one of which exactly duplicated this sweep's 0.0625 GB
+Fjall numbers — that table has been removed until the 0.1 GB target has its own
+versioned capture.
 
 #### Sustained-write tail (512 MB, exploratory)
 
